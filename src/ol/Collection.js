@@ -18,6 +18,33 @@ const Property = {
 
 
 /**
+ * @classdesc
+ * Events emitted by {@link ol.Collection} instances are instances of this
+ * type.
+ *
+ * @constructor
+ * @extends {ol.events.Event}
+ * @implements {oli.CollectionEvent}
+ * @param {ol.CollectionEventType} type Type.
+ * @param {*=} opt_element Element.
+ */
+export const CollectionEvent = function(type, opt_element) {
+
+  Event.call(this, type);
+
+  /**
+   * The element that is added to or removed from the collection.
+   * @type {*}
+   * @api
+   */
+  this.element = opt_element;
+
+};
+
+inherits(CollectionEvent, Event);
+
+
+/**
  * @typedef {{unique: (boolean|undefined)}}
  */
 export let CollectionOptions;
@@ -33,7 +60,7 @@ export let CollectionOptions;
  *
  * @constructor
  * @extends {ol.Object}
- * @fires ol.Collection.Event
+ * @fires ol.CollectionEvent
  * @param {Array.<T>=} opt_array Array.
  * @param {CollectionOptions=} opt_options Collection options.
  * @param {boolean|undefined} opt_options.unique Disallow the same item from
@@ -210,48 +237,47 @@ class Collection extends BaseObject {
   }
 
 
-  /**
-   * Remove the element at the provided index and return it.
-   * Return `undefined` if the collection does not contain this index.
-   * @param {number} index Index.
-   * @return {T|undefined} Value.
-   * @api
-   */
-  removeAt(index) {
+/**
+ * Remove the element at the provided index and return it.
+ * Return `undefined` if the collection does not contain this index.
+ * @param {number} index Index.
+ * @return {T|undefined} Value.
+ * @api
+ */
+removeAt(index) {
+  const prev = this.array_[index];
+  this.array_.splice(index, 1);
+  this.updateLength_();
+  this.dispatchEvent(new CollectionEvent(CollectionEventType.REMOVE, prev));
+  return prev;
+};
+
+
+/**
+ * Set the element at the provided index.
+ * @param {number} index Index.
+ * @param {T} elem Element.
+ * @api
+ */
+setAt(index, elem) {
+  const n = this.getLength();
+  if (index < n) {
+    if (this.unique_) {
+      this.assertUnique_(elem, index);
+    }
     const prev = this.array_[index];
-    this.array_.splice(index, 1);
-    this.updateLength_();
-    this.dispatchEvent(new Collection.Event(CollectionEventType.REMOVE, prev));
-    return prev;
-  }
-
-
-  /**
-   * Set the element at the provided index.
-   * @param {number} index Index.
-   * @param {T} elem Element.
-   * @api
-   */
-  setAt(index, elem) {
-    const n = this.getLength();
-    if (index < n) {
-      if (this.unique_) {
-        this.assertUnique_(elem, index);
-      }
-      const prev = this.array_[index];
-      this.array_[index] = elem;
-      this.dispatchEvent(
-        new Collection.Event(CollectionEventType.REMOVE, prev));
-      this.dispatchEvent(
-        new Collection.Event(CollectionEventType.ADD, elem));
-    } else {
-      let j;
-      for (j = n; j < index; ++j) {
-        this.insertAt(j, undefined);
-      }
-      this.insertAt(index, elem);
+    this.array_[index] = elem;
+    this.dispatchEvent(
+      new CollectionEvent(CollectionEventType.REMOVE, prev));
+    this.dispatchEvent(
+      new CollectionEvent(CollectionEventType.ADD, elem));
+  } else {
+    let j;
+    for (j = n; j < index; ++j) {
+      this.insertAt(j, undefined);
     }
   }
+}
 
 
   /**
@@ -276,30 +302,5 @@ class Collection extends BaseObject {
   }
 
 }
-
-/**
- * @classdesc
- * Events emitted by {@link ol.Collection} instances are instances of this
- * type.
- *
- * @constructor
- * @extends {ol.events.Event}
- * @implements {oli.Collection.Event}
- * @param {ol.CollectionEventType} type Type.
- * @param {*=} opt_element Element.
- */
-Collection.Event = function(type, opt_element) {
-
-  Event.call(this, type);
-
-  /**
-   * The element that is added to or removed from the collection.
-   * @type {*}
-   * @api
-   */
-  this.element = opt_element;
-
-};
-inherits(Collection.Event, Event);
 
 export default Collection;
