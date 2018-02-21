@@ -1,7 +1,6 @@
 /**
  * @module ol/control/Attribution
  */
-import {inherits} from '../index.js';
 import {equals} from '../array.js';
 import Control from '../control/Control.js';
 import {CLASS_CONTROL, CLASS_UNSELECTABLE, CLASS_COLLAPSED} from '../css.js';
@@ -22,163 +21,163 @@ import {visibleAtResolution} from '../layer/Layer.js';
  * @param {olx.control.AttributionOptions=} opt_options Attribution options.
  * @api
  */
-const Attribution = function(opt_options) {
+class Attribution extends Control {
+  constructor(opt_options) {
 
-  const options = opt_options ? opt_options : {};
+    const options = opt_options ? opt_options : {};
 
-  /**
-   * @private
-   * @type {Element}
-   */
-  this.ulElement_ = document.createElement('UL');
-
-  /**
-   * @private
-   * @type {boolean}
-   */
-  this.collapsed_ = options.collapsed !== undefined ? options.collapsed : true;
-
-  /**
-   * @private
-   * @type {boolean}
-   */
-  this.collapsible_ = options.collapsible !== undefined ?
-    options.collapsible : true;
-
-  if (!this.collapsible_) {
-    this.collapsed_ = false;
-  }
-
-  const className = options.className !== undefined ? options.className : 'ol-attribution';
-
-  const tipLabel = options.tipLabel !== undefined ? options.tipLabel : 'Attributions';
-
-  const collapseLabel = options.collapseLabel !== undefined ? options.collapseLabel : '\u00BB';
-
-  if (typeof collapseLabel === 'string') {
     /**
      * @private
-     * @type {Node}
+     * @type {Element}
      */
-    this.collapseLabel_ = document.createElement('span');
-    this.collapseLabel_.textContent = collapseLabel;
-  } else {
-    this.collapseLabel_ = collapseLabel;
-  }
+    this.ulElement_ = document.createElement('UL');
 
-  const label = options.label !== undefined ? options.label : 'i';
-
-  if (typeof label === 'string') {
     /**
      * @private
-     * @type {Node}
+     * @type {boolean}
      */
-    this.label_ = document.createElement('span');
-    this.label_.textContent = label;
-  } else {
-    this.label_ = label;
+    this.collapsed_ = options.collapsed !== undefined ? options.collapsed : true;
+
+    /**
+     * @private
+     * @type {boolean}
+     */
+    this.collapsible_ = options.collapsible !== undefined ?
+      options.collapsible : true;
+
+    if (!this.collapsible_) {
+      this.collapsed_ = false;
+    }
+
+    const className = options.className !== undefined ? options.className : 'ol-attribution';
+
+    const tipLabel = options.tipLabel !== undefined ? options.tipLabel : 'Attributions';
+
+    const collapseLabel = options.collapseLabel !== undefined ? options.collapseLabel : '\u00BB';
+
+    if (typeof collapseLabel === 'string') {
+      /**
+       * @private
+       * @type {Node}
+       */
+      this.collapseLabel_ = document.createElement('span');
+      this.collapseLabel_.textContent = collapseLabel;
+    } else {
+      this.collapseLabel_ = collapseLabel;
+    }
+
+    const label = options.label !== undefined ? options.label : 'i';
+
+    if (typeof label === 'string') {
+      /**
+       * @private
+       * @type {Node}
+       */
+      this.label_ = document.createElement('span');
+      this.label_.textContent = label;
+    } else {
+      this.label_ = label;
+    }
+
+
+    const activeLabel = (this.collapsible_ && !this.collapsed_) ?
+      this.collapseLabel_ : this.label_;
+    const button = document.createElement('button');
+    button.setAttribute('type', 'button');
+    button.title = tipLabel;
+    button.appendChild(activeLabel);
+
+    listen(button, EventType.CLICK, this.handleClick_, this);
+
+    const cssClasses = className + ' ' + CLASS_UNSELECTABLE + ' ' + CLASS_CONTROL +
+        (this.collapsed_ && this.collapsible_ ? ' ' + CLASS_COLLAPSED : '') +
+        (this.collapsible_ ? '' : ' ol-uncollapsible');
+    const element = document.createElement('div');
+    element.className = cssClasses;
+    element.appendChild(this.ulElement_);
+    element.appendChild(button);
+
+    super({
+      element: element,
+      render: options.render || render,
+      target: options.target
+    });
+
+    /**
+     * A list of currently rendered resolutions.
+     * @type {Array.<string>}
+     * @private
+     */
+    this.renderedAttributions_ = [];
+
+    /**
+     * @private
+     * @type {boolean}
+     */
+    this.renderedVisible_ = true;
+
   }
 
 
-  const activeLabel = (this.collapsible_ && !this.collapsed_) ?
-    this.collapseLabel_ : this.label_;
-  const button = document.createElement('button');
-  button.setAttribute('type', 'button');
-  button.title = tipLabel;
-  button.appendChild(activeLabel);
-
-  listen(button, EventType.CLICK, this.handleClick_, this);
-
-  const cssClasses = className + ' ' + CLASS_UNSELECTABLE + ' ' + CLASS_CONTROL +
-      (this.collapsed_ && this.collapsible_ ? ' ' + CLASS_COLLAPSED : '') +
-      (this.collapsible_ ? '' : ' ol-uncollapsible');
-  const element = document.createElement('div');
-  element.className = cssClasses;
-  element.appendChild(this.ulElement_);
-  element.appendChild(button);
-
-  Control.call(this, {
-    element: element,
-    render: options.render || render,
-    target: options.target
-  });
-
   /**
-   * A list of currently rendered resolutions.
-   * @type {Array.<string>}
+   * Get a list of visible attributions.
+   * @param {olx.FrameState} frameState Frame state.
+   * @return {Array.<string>} Attributions.
    * @private
    */
-  this.renderedAttributions_ = [];
+  getSourceAttributions_(frameState) {
+    /**
+     * Used to determine if an attribution already exists.
+     * @type {Object.<string, boolean>}
+     */
+    const lookup = {};
 
-  /**
-   * @private
-   * @type {boolean}
-   */
-  this.renderedVisible_ = true;
+    /**
+     * A list of visible attributions.
+     * @type {Array.<string>}
+     */
+    const visibleAttributions = [];
 
-};
+    const layerStatesArray = frameState.layerStatesArray;
+    const resolution = frameState.viewState.resolution;
+    for (let i = 0, ii = layerStatesArray.length; i < ii; ++i) {
+      const layerState = layerStatesArray[i];
+      if (!visibleAtResolution(layerState, resolution)) {
+        continue;
+      }
 
-inherits(Attribution, Control);
+      const source = layerState.layer.getSource();
+      if (!source) {
+        continue;
+      }
 
+      const attributionGetter = source.getAttributions();
+      if (!attributionGetter) {
+        continue;
+      }
 
-/**
- * Get a list of visible attributions.
- * @param {olx.FrameState} frameState Frame state.
- * @return {Array.<string>} Attributions.
- * @private
- */
-Attribution.prototype.getSourceAttributions_ = function(frameState) {
-  /**
-   * Used to determine if an attribution already exists.
-   * @type {Object.<string, boolean>}
-   */
-  const lookup = {};
+      const attributions = attributionGetter(frameState);
+      if (!attributions) {
+        continue;
+      }
 
-  /**
-   * A list of visible attributions.
-   * @type {Array.<string>}
-   */
-  const visibleAttributions = [];
-
-  const layerStatesArray = frameState.layerStatesArray;
-  const resolution = frameState.viewState.resolution;
-  for (let i = 0, ii = layerStatesArray.length; i < ii; ++i) {
-    const layerState = layerStatesArray[i];
-    if (!visibleAtResolution(layerState, resolution)) {
-      continue;
-    }
-
-    const source = layerState.layer.getSource();
-    if (!source) {
-      continue;
-    }
-
-    const attributionGetter = source.getAttributions();
-    if (!attributionGetter) {
-      continue;
-    }
-
-    const attributions = attributionGetter(frameState);
-    if (!attributions) {
-      continue;
-    }
-
-    if (Array.isArray(attributions)) {
-      for (let j = 0, jj = attributions.length; j < jj; ++j) {
-        if (!(attributions[j] in lookup)) {
-          visibleAttributions.push(attributions[j]);
-          lookup[attributions[j]] = true;
+      if (Array.isArray(attributions)) {
+        for (let j = 0, jj = attributions.length; j < jj; ++j) {
+          if (!(attributions[j] in lookup)) {
+            visibleAttributions.push(attributions[j]);
+            lookup[attributions[j]] = true;
+          }
+        }
+      } else {
+        if (!(attributions in lookup)) {
+          visibleAttributions.push(attributions);
+          lookup[attributions] = true;
         }
       }
-    } else {
-      if (!(attributions in lookup)) {
-        visibleAttributions.push(attributions);
-        lookup[attributions] = true;
-      }
     }
+    return visibleAttributions;
   }
-  return visibleAttributions;
-};
+}
 
 
 /**

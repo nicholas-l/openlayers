@@ -1,7 +1,6 @@
 /**
  * @module ol/control/FullScreen
  */
-import {inherits} from '../index.js';
 import Control from '../control/Control.js';
 import {CLASS_CONTROL, CLASS_UNSELECTABLE, CLASS_UNSUPPORTED} from '../css.js';
 import {replaceNode} from '../dom.js';
@@ -49,148 +48,148 @@ const getChangeType = (function() {
  * @param {olx.control.FullScreenOptions=} opt_options Options.
  * @api
  */
-const FullScreen = function(opt_options) {
+class FullScreen extends Control {
+  constructor(opt_options) {
 
-  const options = opt_options ? opt_options : {};
+    const options = opt_options ? opt_options : {};
 
-  /**
-   * @private
-   * @type {string}
-   */
-  this.cssClassName_ = options.className !== undefined ? options.className :
-    'ol-full-screen';
+    /**
+     * @private
+     * @type {string}
+     */
+    this.cssClassName_ = options.className !== undefined ? options.className :
+      'ol-full-screen';
 
-  const label = options.label !== undefined ? options.label : '\u2922';
+    const label = options.label !== undefined ? options.label : '\u2922';
 
-  /**
-   * @private
-   * @type {Node}
-   */
-  this.labelNode_ = typeof label === 'string' ?
-    document.createTextNode(label) : label;
+    /**
+     * @private
+     * @type {Node}
+     */
+    this.labelNode_ = typeof label === 'string' ?
+      document.createTextNode(label) : label;
 
-  const labelActive = options.labelActive !== undefined ? options.labelActive : '\u00d7';
+    const labelActive = options.labelActive !== undefined ? options.labelActive : '\u00d7';
 
-  /**
-   * @private
-   * @type {Node}
-   */
-  this.labelActiveNode_ = typeof labelActive === 'string' ?
-    document.createTextNode(labelActive) : labelActive;
+    /**
+     * @private
+     * @type {Node}
+     */
+    this.labelActiveNode_ = typeof labelActive === 'string' ?
+      document.createTextNode(labelActive) : labelActive;
 
-  const tipLabel = options.tipLabel ? options.tipLabel : 'Toggle full-screen';
-  const button = document.createElement('button');
-  button.className = this.cssClassName_ + '-' + isFullScreen();
-  button.setAttribute('type', 'button');
-  button.title = tipLabel;
-  button.appendChild(this.labelNode_);
+    const tipLabel = options.tipLabel ? options.tipLabel : 'Toggle full-screen';
+    const button = document.createElement('button');
+    button.className = this.cssClassName_ + '-' + isFullScreen();
+    button.setAttribute('type', 'button');
+    button.title = tipLabel;
+    button.appendChild(this.labelNode_);
 
-  listen(button, EventType.CLICK,
-    this.handleClick_, this);
+    listen(button, EventType.CLICK,
+      this.handleClick_, this);
 
-  const cssClasses = this.cssClassName_ + ' ' + CLASS_UNSELECTABLE +
-      ' ' + CLASS_CONTROL + ' ' +
-      (!isFullScreenSupported() ? CLASS_UNSUPPORTED : '');
-  const element = document.createElement('div');
-  element.className = cssClasses;
-  element.appendChild(button);
+    const cssClasses = this.cssClassName_ + ' ' + CLASS_UNSELECTABLE +
+        ' ' + CLASS_CONTROL + ' ' +
+        (!isFullScreenSupported() ? CLASS_UNSUPPORTED : '');
+    const element = document.createElement('div');
+    element.className = cssClasses;
+    element.appendChild(button);
 
-  Control.call(this, {
-    element: element,
-    target: options.target
-  });
+    super({
+      element: element,
+      target: options.target
+    });
 
-  /**
-   * @private
-   * @type {boolean}
-   */
-  this.keys_ = options.keys !== undefined ? options.keys : false;
+    /**
+     * @private
+     * @type {boolean}
+     */
+    this.keys_ = options.keys !== undefined ? options.keys : false;
 
-  /**
-   * @private
-   * @type {Element|string|undefined}
-   */
-  this.source_ = options.source;
+    /**
+     * @private
+     * @type {Element|string|undefined}
+     */
+    this.source_ = options.source;
 
-};
-
-inherits(FullScreen, Control);
-
-
-/**
- * @param {Event} event The event to handle
- * @private
- */
-FullScreen.prototype.handleClick_ = function(event) {
-  event.preventDefault();
-  this.handleFullScreen_();
-};
-
-
-/**
- * @private
- */
-FullScreen.prototype.handleFullScreen_ = function() {
-  if (!isFullScreenSupported()) {
-    return;
   }
-  const map = this.getMap();
-  if (!map) {
-    return;
+
+
+  /**
+   * @param {Event} event The event to handle
+   * @private
+   */
+  handleClick_(event) {
+    event.preventDefault();
+    this.handleFullScreen_();
   }
-  if (isFullScreen()) {
-    exitFullScreen();
-  } else {
-    let element;
-    if (this.source_) {
-      element = typeof this.source_ === 'string' ?
-        document.getElementById(this.source_) :
-        this.source_;
-    } else {
-      element = map.getTargetElement();
+
+
+  /**
+   * @private
+   */
+  handleFullScreen_() {
+    if (!isFullScreenSupported()) {
+      return;
     }
-    if (this.keys_) {
-      requestFullScreenWithKeys(element);
-
+    const map = this.getMap();
+    if (!map) {
+      return;
+    }
+    if (isFullScreen()) {
+      exitFullScreen();
     } else {
-      requestFullScreen(element);
+      let element;
+      if (this.source_) {
+        element = typeof this.source_ === 'string' ?
+          document.getElementById(this.source_) :
+          this.source_;
+      } else {
+        element = map.getTargetElement();
+      }
+      if (this.keys_) {
+        requestFullScreenWithKeys(element);
+
+      } else {
+        requestFullScreen(element);
+      }
     }
   }
-};
 
 
-/**
- * @private
- */
-FullScreen.prototype.handleFullScreenChange_ = function() {
-  const button = this.element.firstElementChild;
-  const map = this.getMap();
-  if (isFullScreen()) {
-    button.className = this.cssClassName_ + '-true';
-    replaceNode(this.labelActiveNode_, this.labelNode_);
-  } else {
-    button.className = this.cssClassName_ + '-false';
-    replaceNode(this.labelNode_, this.labelActiveNode_);
+  /**
+   * @private
+   */
+  handleFullScreenChange_() {
+    const button = this.element.firstElementChild;
+    const map = this.getMap();
+    if (isFullScreen()) {
+      button.className = this.cssClassName_ + '-true';
+      replaceNode(this.labelActiveNode_, this.labelNode_);
+    } else {
+      button.className = this.cssClassName_ + '-false';
+      replaceNode(this.labelNode_, this.labelActiveNode_);
+    }
+    if (map) {
+      map.updateSize();
+    }
   }
-  if (map) {
-    map.updateSize();
-  }
-};
 
 
-/**
- * @inheritDoc
- * @api
- */
-FullScreen.prototype.setMap = function(map) {
-  Control.prototype.setMap.call(this, map);
-  if (map) {
-    this.listenerKeys.push(listen(document,
-      getChangeType(),
-      this.handleFullScreenChange_, this)
-    );
+  /**
+   * @inheritDoc
+   * @api
+   */
+  setMap(map) {
+    super.setMap(map);
+    if (map) {
+      this.listenerKeys.push(listen(document,
+        getChangeType(),
+        this.handleFullScreenChange_, this)
+      );
+    }
   }
-};
+}
 
 /**
  * @return {boolean} Fullscreen is supported by the current platform.

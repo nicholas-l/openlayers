@@ -1,7 +1,6 @@
 /**
  * @module ol/CanvasMap
  */
-import {inherits} from './index.js';
 import PluggableMap from './PluggableMap.js';
 import PluginType from './PluginType.js';
 import {defaults as defaultControls} from './control.js';

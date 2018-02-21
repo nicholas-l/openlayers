@@ -237,47 +237,47 @@ class Collection extends BaseObject {
   }
 
 
-/**
- * Remove the element at the provided index and return it.
- * Return `undefined` if the collection does not contain this index.
- * @param {number} index Index.
- * @return {T|undefined} Value.
- * @api
- */
-removeAt(index) {
-  const prev = this.array_[index];
-  this.array_.splice(index, 1);
-  this.updateLength_();
-  this.dispatchEvent(new CollectionEvent(CollectionEventType.REMOVE, prev));
-  return prev;
-};
-
-
-/**
- * Set the element at the provided index.
- * @param {number} index Index.
- * @param {T} elem Element.
- * @api
- */
-setAt(index, elem) {
-  const n = this.getLength();
-  if (index < n) {
-    if (this.unique_) {
-      this.assertUnique_(elem, index);
-    }
+  /**
+   * Remove the element at the provided index and return it.
+   * Return `undefined` if the collection does not contain this index.
+   * @param {number} index Index.
+   * @return {T|undefined} Value.
+   * @api
+   */
+  removeAt(index) {
     const prev = this.array_[index];
-    this.array_[index] = elem;
-    this.dispatchEvent(
-      new CollectionEvent(CollectionEventType.REMOVE, prev));
-    this.dispatchEvent(
-      new CollectionEvent(CollectionEventType.ADD, elem));
-  } else {
-    let j;
-    for (j = n; j < index; ++j) {
-      this.insertAt(j, undefined);
+    this.array_.splice(index, 1);
+    this.updateLength_();
+    this.dispatchEvent(new CollectionEvent(CollectionEventType.REMOVE, prev));
+    return prev;
+  }
+
+
+  /**
+   * Set the element at the provided index.
+   * @param {number} index Index.
+   * @param {T} elem Element.
+   * @api
+   */
+  setAt(index, elem) {
+    const n = this.getLength();
+    if (index < n) {
+      if (this.unique_) {
+        this.assertUnique_(elem, index);
+      }
+      const prev = this.array_[index];
+      this.array_[index] = elem;
+      this.dispatchEvent(
+        new CollectionEvent(CollectionEventType.REMOVE, prev));
+      this.dispatchEvent(
+        new CollectionEvent(CollectionEventType.ADD, elem));
+    } else {
+      let j;
+      for (j = n; j < index; ++j) {
+        this.insertAt(j, undefined);
+      }
     }
   }
-}
 
 
   /**
