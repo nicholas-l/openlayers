@@ -29,19 +29,15 @@ class Rotate extends Control {
 
     const label = options.label !== undefined ? options.label : '\u21E7';
 
-    /**
-     * @type {Element}
-     * @private
-     */
-    this.label_ = null;
+    let label_;
 
     if (typeof label === 'string') {
-      this.label_ = document.createElement('span');
-      this.label_.className = 'ol-compass';
-      this.label_.textContent = label;
+      label_ = document.createElement('span');
+      label_.className = 'ol-compass';
+      label_.textContent = label;
     } else {
-      this.label_ = label;
-      this.label_.classList.add('ol-compass');
+      label_ = label;
+      label_.classList.add('ol-compass');
     }
 
     const tipLabel = options.tipLabel ? options.tipLabel : 'Reset rotation';
@@ -50,23 +46,28 @@ class Rotate extends Control {
     button.className = className + '-reset';
     button.setAttribute('type', 'button');
     button.title = tipLabel;
-    button.appendChild(this.label_);
+    button.appendChild(label_);
 
-    listen(button, EventType.CLICK,
-      Rotate.prototype.handleClick_, this);
+    listen(button, EventType.CLICK, (event) => this.handleClick_(event));
 
     const cssClasses = className + ' ' + CLASS_UNSELECTABLE + ' ' + CLASS_CONTROL;
     const element = document.createElement('div');
     element.className = cssClasses;
     element.appendChild(button);
 
-    this.callResetNorth_ = options.resetNorth ? options.resetNorth : undefined;
-
     super({
       element: element,
       render: options.render || render,
       target: options.target
     });
+    this.callResetNorth_ = options.resetNorth ? options.resetNorth : undefined;
+    this.label_ = label_;
+
+    /**
+     * @type {Element}
+     * @private
+     */
+    this.label_ = label_;
 
     /**
      * @type {number}

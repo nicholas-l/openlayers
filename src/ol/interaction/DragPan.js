@@ -18,47 +18,51 @@ import PointerInteraction from '../interaction/Pointer.js';
  * @param {olx.interaction.DragPanOptions=} opt_options Options.
  * @api
  */
-const DragPan = function(opt_options) {
+class DragPan extends PointerInteraction {
+  constructor(opt_options) {
 
-  PointerInteraction.call(this, {
-    handleDownEvent: handleDownEvent,
-    handleDragEvent: handleDragEvent,
-    handleUpEvent: handleUpEvent
-  });
+    super({
+      handleDownEvent: handleDownEvent,
+      handleDragEvent: handleDragEvent,
+      handleUpEvent: handleUpEvent
+    });
 
-  const options = opt_options ? opt_options : {};
+    const options = opt_options ? opt_options : {};
 
-  /**
-   * @private
-   * @type {ol.Kinetic|undefined}
-   */
-  this.kinetic_ = options.kinetic;
+    /**
+     * @private
+     * @type {ol.Kinetic|undefined}
+     */
+    this.kinetic_ = options.kinetic;
 
-  /**
-   * @type {ol.Pixel}
-   */
-  this.lastCentroid = null;
+    /**
+     * @type {ol.Pixel}
+     */
+    this.lastCentroid = null;
 
-  /**
-   * @type {number}
-   */
-  this.lastPointersCount_;
+    /**
+     * @type {number}
+     */
+    this.lastPointersCount_;
 
-  /**
-   * @private
-   * @type {ol.EventsConditionType}
-   */
-  this.condition_ = options.condition ? options.condition : noModifierKeys;
+    /**
+     * @private
+     * @type {ol.EventsConditionType}
+     */
+    this.condition_ = options.condition ? options.condition : noModifierKeys;
 
-  /**
-   * @private
-   * @type {boolean}
-   */
-  this.noKinetic_ = false;
+    /**
+     * @private
+     * @type {boolean}
+     */
+    this.noKinetic_ = false;
+    /**
+     * @inheritDoc
+     */
+    this.shouldStopEvent = FALSE;
+  }
 
-};
-
-inherits(DragPan, PointerInteraction);
+}
 
 
 /**
@@ -163,8 +167,4 @@ function handleDownEvent(mapBrowserEvent) {
 }
 
 
-/**
- * @inheritDoc
- */
-DragPan.prototype.shouldStopEvent = FALSE;
 export default DragPan;

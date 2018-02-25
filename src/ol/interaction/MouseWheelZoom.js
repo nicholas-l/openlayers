@@ -1,7 +1,6 @@
 /**
  * @module ol/interaction/MouseWheelZoom
  */
-import {inherits} from '../index.js';
 import ViewHint from '../ViewHint.js';
 import {always} from '../events/condition.js';
 import {easeOut} from '../easing.js';
@@ -36,103 +35,147 @@ export const Mode = {
  * @param {olx.interaction.MouseWheelZoomOptions=} opt_options Options.
  * @api
  */
-const MouseWheelZoom = function(opt_options) {
+class MouseWheelZoom extends Interaction {
+  constructor(opt_options) {
 
-  Interaction.call(this, {
-    handleEvent: handleEvent
-  });
+    super({
+      handleEvent: handleEvent
+    });
 
-  const options = opt_options || {};
+    const options = opt_options || {};
+
+    /**
+     * @private
+     * @type {number}
+     */
+    this.delta_ = 0;
+
+    /**
+     * @private
+     * @type {number}
+     */
+    this.duration_ = options.duration !== undefined ? options.duration : 250;
+
+    /**
+     * @private
+     * @type {number}
+     */
+    this.timeout_ = options.timeout !== undefined ? options.timeout : 80;
+
+    /**
+     * @private
+     * @type {boolean}
+     */
+    this.useAnchor_ = options.useAnchor !== undefined ? options.useAnchor : true;
+
+    /**
+     * @private
+     * @type {boolean}
+     */
+    this.constrainResolution_ = options.constrainResolution || false;
+
+    /**
+     * @private
+     * @type {ol.EventsConditionType}
+     */
+    this.condition_ = options.condition ? options.condition : always;
+
+    /**
+     * @private
+     * @type {?ol.Coordinate}
+     */
+    this.lastAnchor_ = null;
+
+    /**
+     * @private
+     * @type {number|undefined}
+     */
+    this.startTime_ = undefined;
+
+    /**
+     * @private
+     * @type {number|undefined}
+     */
+    this.timeoutId_ = undefined;
+
+    /**
+     * @private
+     * @type {ol.interaction.Mode|undefined}
+     */
+    this.mode_ = undefined;
+
+    /**
+     * Trackpad events separated by this delay will be considered separate
+     * interactions.
+     * @type {number}
+     */
+    this.trackpadEventGap_ = 400;
+
+    /**
+     * @type {number|undefined}
+     */
+    this.trackpadTimeoutId_ = undefined;
+
+    /**
+     * The number of delta values per zoom level
+     * @private
+     * @type {number}
+     */
+    this.trackpadDeltaPerZoom_ = 300;
+
+    /**
+     * The zoom factor by which scroll zooming is allowed to exceed the limits.
+     * @private
+     * @type {number}
+     */
+    this.trackpadZoomBuffer_ = 1.5;
+
+  }
 
   /**
    * @private
-   * @type {number}
    */
-  this.delta_ = 0;
+  decrementInteractingHint_() {
+    this.trackpadTimeoutId_ = undefined;
+    const view = this.getMap().getView();
+    view.setHint(ViewHint.INTERACTING, -1);
+  }
+
 
   /**
    * @private
-   * @type {number}
+   * @param {ol.PluggableMap} map Map.
    */
-  this.duration_ = options.duration !== undefined ? options.duration : 250;
+  handleWheelZoom_(map) {
+    const view = map.getView();
+    if (view.getAnimating()) {
+      view.cancelAnimations();
+    }
+    const maxDelta = MAX_DELTA;
+    const delta = clamp(this.delta_, -maxDelta, maxDelta);
+    Interaction.zoomByDelta(view, -delta, this.lastAnchor_,
+      this.duration_);
+    this.mode_ = undefined;
+    this.delta_ = 0;
+    this.lastAnchor_ = null;
+    this.startTime_ = undefined;
+    this.timeoutId_ = undefined;
+  }
+
 
   /**
-   * @private
-   * @type {number}
+   * Enable or disable using the mouse's location as an anchor when zooming
+   * @param {boolean} useAnchor true to zoom to the mouse's location, false
+   * to zoom to the center of the map
+   * @api
    */
-  this.timeout_ = options.timeout !== undefined ? options.timeout : 80;
-
-  /**
-   * @private
-   * @type {boolean}
-   */
-  this.useAnchor_ = options.useAnchor !== undefined ? options.useAnchor : true;
-
-  /**
-   * @private
-   * @type {boolean}
-   */
-  this.constrainResolution_ = options.constrainResolution || false;
-
-  /**
-   * @private
-   * @type {ol.EventsConditionType}
-   */
-  this.condition_ = options.condition ? options.condition : always;
-
-  /**
-   * @private
-   * @type {?ol.Coordinate}
-   */
-  this.lastAnchor_ = null;
-
-  /**
-   * @private
-   * @type {number|undefined}
-   */
-  this.startTime_ = undefined;
-
-  /**
-   * @private
-   * @type {number|undefined}
-   */
-  this.timeoutId_ = undefined;
-
-  /**
-   * @private
-   * @type {ol.interaction.Mode|undefined}
-   */
-  this.mode_ = undefined;
-
-  /**
-   * Trackpad events separated by this delay will be considered separate
-   * interactions.
-   * @type {number}
-   */
-  this.trackpadEventGap_ = 400;
-
-  /**
-   * @type {number|undefined}
-   */
-  this.trackpadTimeoutId_ = undefined;
-
-  /**
-   * The number of delta values per zoom level
-   * @private
-   * @type {number}
-   */
-  this.trackpadDeltaPerZoom_ = 300;
-
-  /**
-   * The zoom factor by which scroll zooming is allowed to exceed the limits.
-   * @private
-   * @type {number}
-   */
-  this.trackpadZoomBuffer_ = 1.5;
-
-};
-
-inherits(MouseWheelZoom, Interaction);
+  setMouseAnchor(useAnchor) {
+    this.useAnchor_ = useAnchor;
+    if (!useAnchor) {
+      this.lastAnchor_ = null;
+    }
+  }
+}
 
 
 /**
@@ -257,51 +300,6 @@ function handleEvent(mapBrowserEvent) {
 
   return false;
 }
-
-
-/**
- * @private
- */
-MouseWheelZoom.prototype.decrementInteractingHint_ = function() {
-  this.trackpadTimeoutId_ = undefined;
-  const view = this.getMap().getView();
-  view.setHint(ViewHint.INTERACTING, -1);
-};
-
-
-/**
- * @private
- * @param {ol.PluggableMap} map Map.
- */
-MouseWheelZoom.prototype.handleWheelZoom_ = function(map) {
-  const view = map.getView();
-  if (view.getAnimating()) {
-    view.cancelAnimations();
-  }
-  const maxDelta = MAX_DELTA;
-  const delta = clamp(this.delta_, -maxDelta, maxDelta);
-  Interaction.zoomByDelta(view, -delta, this.lastAnchor_,
-    this.duration_);
-  this.mode_ = undefined;
-  this.delta_ = 0;
-  this.lastAnchor_ = null;
-  this.startTime_ = undefined;
-  this.timeoutId_ = undefined;
-};
-
-
-/**
- * Enable or disable using the mouse's location as an anchor when zooming
- * @param {boolean} useAnchor true to zoom to the mouse's location, false
- * to zoom to the center of the map
- * @api
- */
-MouseWheelZoom.prototype.setMouseAnchor = function(useAnchor) {
-  this.useAnchor_ = useAnchor;
-  if (!useAnchor) {
-    this.lastAnchor_ = null;
-  }
-};
 
 
 export default MouseWheelZoom;

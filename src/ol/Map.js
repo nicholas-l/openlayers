@@ -1,7 +1,6 @@
 /**
  * @module ol/Map
  */
-import {inherits} from './index.js';
 import PluggableMap from './PluggableMap.js';
 import PluginType from './PluginType.js';
 import {defaults as defaultControls} from './control.js';
@@ -84,18 +83,18 @@ registerMultiple(PluginType.LAYER_RENDERER, [
  * @fires ol.render.Event#precompose
  * @api
  */
-const Map = function(options) {
-  options = assign({}, options);
-  if (!options.controls) {
-    options.controls = defaultControls();
-  }
-  if (!options.interactions) {
-    options.interactions = defaultInteractions();
-  }
+class Map extends PluggableMap {
+  constructor(options) {
+    options = assign({}, options);
+    if (!options.controls) {
+      options.controls = defaultControls();
+    }
+    if (!options.interactions) {
+      options.interactions = defaultInteractions();
+    }
 
-  PluggableMap.call(this, options);
-};
-
-inherits(Map, PluggableMap);
+    super(options);
+  }
+}
 
 export default Map;

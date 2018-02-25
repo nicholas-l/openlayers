@@ -1,7 +1,6 @@
 /**
  * @module ol/interaction/DragRotate
  */
-import {inherits} from '../index.js';
 import {disable} from '../rotationconstraint.js';
 import ViewHint from '../ViewHint.js';
 import {altShiftKeysOnly, mouseOnly, mouseActionButton} from '../events/condition.js';
@@ -22,36 +21,40 @@ import PointerInteraction from '../interaction/Pointer.js';
  * @param {olx.interaction.DragRotateOptions=} opt_options Options.
  * @api
  */
-const DragRotate = function(opt_options) {
+class DragRotate extends PointerInteraction {
+  constructor(opt_options) {
 
-  const options = opt_options ? opt_options : {};
+    const options = opt_options ? opt_options : {};
 
-  PointerInteraction.call(this, {
-    handleDownEvent: handleDownEvent,
-    handleDragEvent: handleDragEvent,
-    handleUpEvent: handleUpEvent
-  });
+    super({
+      handleDownEvent: handleDownEvent,
+      handleDragEvent: handleDragEvent,
+      handleUpEvent: handleUpEvent
+    });
 
-  /**
-   * @private
-   * @type {ol.EventsConditionType}
-   */
-  this.condition_ = options.condition ? options.condition : altShiftKeysOnly;
+    /**
+     * @private
+     * @type {ol.EventsConditionType}
+     */
+    this.condition_ = options.condition ? options.condition : altShiftKeysOnly;
 
-  /**
-   * @private
-   * @type {number|undefined}
-   */
-  this.lastAngle_ = undefined;
+    /**
+     * @private
+     * @type {number|undefined}
+     */
+    this.lastAngle_ = undefined;
 
-  /**
-   * @private
-   * @type {number}
-   */
-  this.duration_ = options.duration !== undefined ? options.duration : 250;
-};
-
-inherits(DragRotate, PointerInteraction);
+    /**
+     * @private
+     * @type {number}
+     */
+    this.duration_ = options.duration !== undefined ? options.duration : 250;
+    /**
+     * @inheritDoc
+     */
+    this.shouldStopEvent = FALSE;
+  }
+}
 
 
 /**
@@ -123,8 +126,4 @@ function handleDownEvent(mapBrowserEvent) {
 }
 
 
-/**
- * @inheritDoc
- */
-DragRotate.prototype.shouldStopEvent = FALSE;
 export default DragRotate;

@@ -23,35 +23,35 @@ import Interaction from '../interaction/Interaction.js';
  * @extends {ol.interaction.Interaction}
  * @api
  */
-const KeyboardZoom = function(opt_options) {
+class KeyboardZoom extends Interaction {
+  constructor(opt_options) {
 
-  Interaction.call(this, {
-    handleEvent: handleEvent
-  });
+    super({
+      handleEvent: handleEvent
+    });
 
-  const options = opt_options ? opt_options : {};
+    const options = opt_options ? opt_options : {};
 
-  /**
-   * @private
-   * @type {ol.EventsConditionType}
-   */
-  this.condition_ = options.condition ? options.condition : targetNotEditable;
+    /**
+     * @private
+     * @type {ol.EventsConditionType}
+     */
+    this.condition_ = options.condition ? options.condition : targetNotEditable;
 
-  /**
-   * @private
-   * @type {number}
-   */
-  this.delta_ = options.delta ? options.delta : 1;
+    /**
+     * @private
+     * @type {number}
+     */
+    this.delta_ = options.delta ? options.delta : 1;
 
-  /**
-   * @private
-   * @type {number}
-   */
-  this.duration_ = options.duration !== undefined ? options.duration : 100;
+    /**
+     * @private
+     * @type {number}
+     */
+    this.duration_ = options.duration !== undefined ? options.duration : 100;
 
-};
-
-inherits(KeyboardZoom, Interaction);
+  }
+}
 
 
 /**

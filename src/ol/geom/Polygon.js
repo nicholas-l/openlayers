@@ -36,333 +36,332 @@ import {modulo} from '../math.js';
  * @param {ol.geom.GeometryLayout=} opt_layout Layout.
  * @api
  */
-const Polygon = function(coordinates, opt_layout) {
+class Polygon extends SimpleGeometry {
+  constructor(coordinates, opt_layout) {
+    super();
 
-  SimpleGeometry.call(this);
+    /**
+     * @type {Array.<number>}
+     * @private
+     */
+    this.ends_ = [];
+
+    /**
+     * @private
+     * @type {number}
+     */
+    this.flatInteriorPointRevision_ = -1;
+
+    /**
+     * @private
+     * @type {ol.Coordinate}
+     */
+    this.flatInteriorPoint_ = null;
+
+    /**
+     * @private
+     * @type {number}
+     */
+    this.maxDelta_ = -1;
+
+    /**
+     * @private
+     * @type {number}
+     */
+    this.maxDeltaRevision_ = -1;
+
+    /**
+     * @private
+     * @type {number}
+     */
+    this.orientedRevision_ = -1;
+
+    /**
+     * @private
+     * @type {Array.<number>}
+     */
+    this.orientedFlatCoordinates_ = null;
+
+    this.setCoordinates(coordinates, opt_layout);
+
+  }
+
 
   /**
-   * @type {Array.<number>}
-   * @private
+   * Append the passed linear ring to this polygon.
+   * @param {ol.geom.LinearRing} linearRing Linear ring.
+   * @api
    */
-  this.ends_ = [];
-
-  /**
-   * @private
-   * @type {number}
-   */
-  this.flatInteriorPointRevision_ = -1;
-
-  /**
-   * @private
-   * @type {ol.Coordinate}
-   */
-  this.flatInteriorPoint_ = null;
-
-  /**
-   * @private
-   * @type {number}
-   */
-  this.maxDelta_ = -1;
-
-  /**
-   * @private
-   * @type {number}
-   */
-  this.maxDeltaRevision_ = -1;
-
-  /**
-   * @private
-   * @type {number}
-   */
-  this.orientedRevision_ = -1;
-
-  /**
-   * @private
-   * @type {Array.<number>}
-   */
-  this.orientedFlatCoordinates_ = null;
-
-  this.setCoordinates(coordinates, opt_layout);
-
-};
-
-inherits(Polygon, SimpleGeometry);
-
-
-/**
- * Append the passed linear ring to this polygon.
- * @param {ol.geom.LinearRing} linearRing Linear ring.
- * @api
- */
-Polygon.prototype.appendLinearRing = function(linearRing) {
-  if (!this.flatCoordinates) {
-    this.flatCoordinates = linearRing.getFlatCoordinates().slice();
-  } else {
-    extend(this.flatCoordinates, linearRing.getFlatCoordinates());
-  }
-  this.ends_.push(this.flatCoordinates.length);
-  this.changed();
-};
-
-
-/**
- * Make a complete copy of the geometry.
- * @return {!ol.geom.Polygon} Clone.
- * @override
- * @api
- */
-Polygon.prototype.clone = function() {
-  const polygon = new Polygon(null);
-  polygon.setFlatCoordinates(
-    this.layout, this.flatCoordinates.slice(), this.ends_.slice());
-  return polygon;
-};
-
-
-/**
- * @inheritDoc
- */
-Polygon.prototype.closestPointXY = function(x, y, closestPoint, minSquaredDistance) {
-  if (minSquaredDistance < closestSquaredDistanceXY(this.getExtent(), x, y)) {
-    return minSquaredDistance;
-  }
-  if (this.maxDeltaRevision_ != this.getRevision()) {
-    this.maxDelta_ = Math.sqrt(arrayMaxSquaredDelta(
-      this.flatCoordinates, 0, this.ends_, this.stride, 0));
-    this.maxDeltaRevision_ = this.getRevision();
-  }
-  return assignClosestArrayPoint(
-    this.flatCoordinates, 0, this.ends_, this.stride,
-    this.maxDelta_, true, x, y, closestPoint, minSquaredDistance);
-};
-
-
-/**
- * @inheritDoc
- */
-Polygon.prototype.containsXY = function(x, y) {
-  return linearRingsContainsXY(this.getOrientedFlatCoordinates(), 0, this.ends_, this.stride, x, y);
-};
-
-
-/**
- * Return the area of the polygon on projected plane.
- * @return {number} Area (on projected plane).
- * @api
- */
-Polygon.prototype.getArea = function() {
-  return linearRingsArea(this.getOrientedFlatCoordinates(), 0, this.ends_, this.stride);
-};
-
-
-/**
- * Get the coordinate array for this geometry.  This array has the structure
- * of a GeoJSON coordinate array for polygons.
- *
- * @param {boolean=} opt_right Orient coordinates according to the right-hand
- *     rule (counter-clockwise for exterior and clockwise for interior rings).
- *     If `false`, coordinates will be oriented according to the left-hand rule
- *     (clockwise for exterior and counter-clockwise for interior rings).
- *     By default, coordinate orientation will depend on how the geometry was
- *     constructed.
- * @return {Array.<Array.<ol.Coordinate>>} Coordinates.
- * @override
- * @api
- */
-Polygon.prototype.getCoordinates = function(opt_right) {
-  let flatCoordinates;
-  if (opt_right !== undefined) {
-    flatCoordinates = this.getOrientedFlatCoordinates().slice();
-    orientLinearRings(
-      flatCoordinates, 0, this.ends_, this.stride, opt_right);
-  } else {
-    flatCoordinates = this.flatCoordinates;
-  }
-
-  return inflateCoordinatesArray(
-    flatCoordinates, 0, this.ends_, this.stride);
-};
-
-
-/**
- * @return {Array.<number>} Ends.
- */
-Polygon.prototype.getEnds = function() {
-  return this.ends_;
-};
-
-
-/**
- * @return {Array.<number>} Interior point.
- */
-Polygon.prototype.getFlatInteriorPoint = function() {
-  if (this.flatInteriorPointRevision_ != this.getRevision()) {
-    const flatCenter = getCenter(this.getExtent());
-    this.flatInteriorPoint_ = getInteriorPointOfArray(
-      this.getOrientedFlatCoordinates(), 0, this.ends_, this.stride,
-      flatCenter, 0);
-    this.flatInteriorPointRevision_ = this.getRevision();
-  }
-  return this.flatInteriorPoint_;
-};
-
-
-/**
- * Return an interior point of the polygon.
- * @return {ol.geom.Point} Interior point as XYM coordinate, where M is the
- * length of the horizontal intersection that the point belongs to.
- * @api
- */
-Polygon.prototype.getInteriorPoint = function() {
-  return new Point(this.getFlatInteriorPoint(), GeometryLayout.XYM);
-};
-
-
-/**
- * Return the number of rings of the polygon,  this includes the exterior
- * ring and any interior rings.
- *
- * @return {number} Number of rings.
- * @api
- */
-Polygon.prototype.getLinearRingCount = function() {
-  return this.ends_.length;
-};
-
-
-/**
- * Return the Nth linear ring of the polygon geometry. Return `null` if the
- * given index is out of range.
- * The exterior linear ring is available at index `0` and the interior rings
- * at index `1` and beyond.
- *
- * @param {number} index Index.
- * @return {ol.geom.LinearRing} Linear ring.
- * @api
- */
-Polygon.prototype.getLinearRing = function(index) {
-  if (index < 0 || this.ends_.length <= index) {
-    return null;
-  }
-  const linearRing = new LinearRing(null);
-  linearRing.setFlatCoordinates(this.layout, this.flatCoordinates.slice(
-    index === 0 ? 0 : this.ends_[index - 1], this.ends_[index]));
-  return linearRing;
-};
-
-
-/**
- * Return the linear rings of the polygon.
- * @return {Array.<ol.geom.LinearRing>} Linear rings.
- * @api
- */
-Polygon.prototype.getLinearRings = function() {
-  const layout = this.layout;
-  const flatCoordinates = this.flatCoordinates;
-  const ends = this.ends_;
-  const linearRings = [];
-  let offset = 0;
-  for (let i = 0, ii = ends.length; i < ii; ++i) {
-    const end = ends[i];
-    const linearRing = new LinearRing(null);
-    linearRing.setFlatCoordinates(layout, flatCoordinates.slice(offset, end));
-    linearRings.push(linearRing);
-    offset = end;
-  }
-  return linearRings;
-};
-
-
-/**
- * @return {Array.<number>} Oriented flat coordinates.
- */
-Polygon.prototype.getOrientedFlatCoordinates = function() {
-  if (this.orientedRevision_ != this.getRevision()) {
-    const flatCoordinates = this.flatCoordinates;
-    if (linearRingIsOriented(
-      flatCoordinates, 0, this.ends_, this.stride)) {
-      this.orientedFlatCoordinates_ = flatCoordinates;
-    } else {
-      this.orientedFlatCoordinates_ = flatCoordinates.slice();
-      this.orientedFlatCoordinates_.length =
-          orientLinearRings(
-            this.orientedFlatCoordinates_, 0, this.ends_, this.stride);
-    }
-    this.orientedRevision_ = this.getRevision();
-  }
-  return this.orientedFlatCoordinates_;
-};
-
-
-/**
- * @inheritDoc
- */
-Polygon.prototype.getSimplifiedGeometryInternal = function(squaredTolerance) {
-  const simplifiedFlatCoordinates = [];
-  const simplifiedEnds = [];
-  simplifiedFlatCoordinates.length = quantizeArray(
-    this.flatCoordinates, 0, this.ends_, this.stride,
-    Math.sqrt(squaredTolerance),
-    simplifiedFlatCoordinates, 0, simplifiedEnds);
-  const simplifiedPolygon = new Polygon(null);
-  simplifiedPolygon.setFlatCoordinates(
-    GeometryLayout.XY, simplifiedFlatCoordinates, simplifiedEnds);
-  return simplifiedPolygon;
-};
-
-
-/**
- * @inheritDoc
- * @api
- */
-Polygon.prototype.getType = function() {
-  return GeometryType.POLYGON;
-};
-
-
-/**
- * @inheritDoc
- * @api
- */
-Polygon.prototype.intersectsExtent = function(extent) {
-  return intersectsLinearRingArray(
-    this.getOrientedFlatCoordinates(), 0, this.ends_, this.stride, extent);
-};
-
-
-/**
- * Set the coordinates of the polygon.
- * @param {Array.<Array.<ol.Coordinate>>} coordinates Coordinates.
- * @param {ol.geom.GeometryLayout=} opt_layout Layout.
- * @override
- * @api
- */
-Polygon.prototype.setCoordinates = function(coordinates, opt_layout) {
-  if (!coordinates) {
-    this.setFlatCoordinates(GeometryLayout.XY, null, this.ends_);
-  } else {
-    this.setLayout(opt_layout, coordinates, 2);
+  appendLinearRing(linearRing) {
     if (!this.flatCoordinates) {
-      this.flatCoordinates = [];
+      this.flatCoordinates = linearRing.getFlatCoordinates().slice();
+    } else {
+      extend(this.flatCoordinates, linearRing.getFlatCoordinates());
     }
-    const ends = deflateCoordinatesArray(
-      this.flatCoordinates, 0, coordinates, this.stride, this.ends_);
-    this.flatCoordinates.length = ends.length === 0 ? 0 : ends[ends.length - 1];
+    this.ends_.push(this.flatCoordinates.length);
     this.changed();
   }
-};
 
 
-/**
- * @param {ol.geom.GeometryLayout} layout Layout.
- * @param {Array.<number>} flatCoordinates Flat coordinates.
- * @param {Array.<number>} ends Ends.
- */
-Polygon.prototype.setFlatCoordinates = function(layout, flatCoordinates, ends) {
-  this.setFlatCoordinatesInternal(layout, flatCoordinates);
-  this.ends_ = ends;
-  this.changed();
-};
+  /**
+   * Make a complete copy of the geometry.
+   * @return {!ol.geom.Polygon} Clone.
+   * @override
+   * @api
+   */
+  clone() {
+    const polygon = new Polygon(null);
+    polygon.setFlatCoordinates(
+      this.layout, this.flatCoordinates.slice(), this.ends_.slice());
+    return polygon;
+  };
+
+
+  /**
+   * @inheritDoc
+   */
+  closestPointXY(x, y, closestPoint, minSquaredDistance) {
+    if (minSquaredDistance < closestSquaredDistanceXY(this.getExtent(), x, y)) {
+      return minSquaredDistance;
+    }
+    if (this.maxDeltaRevision_ != this.getRevision()) {
+      this.maxDelta_ = Math.sqrt(arrayMaxSquaredDelta(
+        this.flatCoordinates, 0, this.ends_, this.stride, 0));
+      this.maxDeltaRevision_ = this.getRevision();
+    }
+    return assignClosestArrayPoint(
+      this.flatCoordinates, 0, this.ends_, this.stride,
+      this.maxDelta_, true, x, y, closestPoint, minSquaredDistance);
+  };
+
+
+  /**
+   * @inheritDoc
+   */
+  containsXY(x, y) {
+    return linearRingsContainsXY(this.getOrientedFlatCoordinates(), 0, this.ends_, this.stride, x, y);
+  };
+
+
+  /**
+   * Return the area of the polygon on projected plane.
+   * @return {number} Area (on projected plane).
+   * @api
+   */
+  getArea() {
+    return linearRingsArea(this.getOrientedFlatCoordinates(), 0, this.ends_, this.stride);
+  };
+
+
+  /**
+   * Get the coordinate array for this geometry.  This array has the structure
+   * of a GeoJSON coordinate array for polygons.
+   *
+   * @param {boolean=} opt_right Orient coordinates according to the right-hand
+   *     rule (counter-clockwise for exterior and clockwise for interior rings).
+   *     If `false`, coordinates will be oriented according to the left-hand rule
+   *     (clockwise for exterior and counter-clockwise for interior rings).
+   *     By default, coordinate orientation will depend on how the geometry was
+   *     constructed.
+   * @return {Array.<Array.<ol.Coordinate>>} Coordinates.
+   * @override
+   * @api
+   */
+  getCoordinates(opt_right) {
+    let flatCoordinates;
+    if (opt_right !== undefined) {
+      flatCoordinates = this.getOrientedFlatCoordinates().slice();
+      orientLinearRings(
+        flatCoordinates, 0, this.ends_, this.stride, opt_right);
+    } else {
+      flatCoordinates = this.flatCoordinates;
+    }
+
+    return inflateCoordinatesArray(
+      flatCoordinates, 0, this.ends_, this.stride);
+  };
+
+
+  /**
+   * @return {Array.<number>} Ends.
+   */
+  getEnds() {
+    return this.ends_;
+  };
+
+
+  /**
+   * @return {Array.<number>} Interior point.
+   */
+  getFlatInteriorPoint() {
+    if (this.flatInteriorPointRevision_ != this.getRevision()) {
+      const flatCenter = getCenter(this.getExtent());
+      this.flatInteriorPoint_ = getInteriorPointOfArray(
+        this.getOrientedFlatCoordinates(), 0, this.ends_, this.stride,
+        flatCenter, 0);
+      this.flatInteriorPointRevision_ = this.getRevision();
+    }
+    return this.flatInteriorPoint_;
+  };
+
+
+  /**
+   * Return an interior point of the polygon.
+   * @return {ol.geom.Point} Interior point as XYM coordinate, where M is the
+   * length of the horizontal intersection that the point belongs to.
+   * @api
+   */
+  getInteriorPoint() {
+    return new Point(this.getFlatInteriorPoint(), GeometryLayout.XYM);
+  };
+
+
+  /**
+   * Return the number of rings of the polygon,  this includes the exterior
+   * ring and any interior rings.
+   *
+   * @return {number} Number of rings.
+   * @api
+   */
+  getLinearRingCount() {
+    return this.ends_.length;
+  };
+
+
+  /**
+   * Return the Nth linear ring of the polygon geometry. Return `null` if the
+   * given index is out of range.
+   * The exterior linear ring is available at index `0` and the interior rings
+   * at index `1` and beyond.
+   *
+   * @param {number} index Index.
+   * @return {ol.geom.LinearRing} Linear ring.
+   * @api
+   */
+  getLinearRing(index) {
+    if (index < 0 || this.ends_.length <= index) {
+      return null;
+    }
+    const linearRing = new LinearRing(null);
+    linearRing.setFlatCoordinates(this.layout, this.flatCoordinates.slice(
+      index === 0 ? 0 : this.ends_[index - 1], this.ends_[index]));
+    return linearRing;
+  };
+
+
+  /**
+   * Return the linear rings of the polygon.
+   * @return {Array.<ol.geom.LinearRing>} Linear rings.
+   * @api
+   */
+  getLinearRings() {
+    const layout = this.layout;
+    const flatCoordinates = this.flatCoordinates;
+    const ends = this.ends_;
+    const linearRings = [];
+    let offset = 0;
+    for (let i = 0, ii = ends.length; i < ii; ++i) {
+      const end = ends[i];
+      const linearRing = new LinearRing(null);
+      linearRing.setFlatCoordinates(layout, flatCoordinates.slice(offset, end));
+      linearRings.push(linearRing);
+      offset = end;
+    }
+    return linearRings;
+  };
+
+
+  /**
+   * @return {Array.<number>} Oriented flat coordinates.
+   */
+  getOrientedFlatCoordinates() {
+    if (this.orientedRevision_ != this.getRevision()) {
+      const flatCoordinates = this.flatCoordinates;
+      if (linearRingIsOriented(
+        flatCoordinates, 0, this.ends_, this.stride)) {
+        this.orientedFlatCoordinates_ = flatCoordinates;
+      } else {
+        this.orientedFlatCoordinates_ = flatCoordinates.slice();
+        this.orientedFlatCoordinates_.length =
+            orientLinearRings(
+              this.orientedFlatCoordinates_, 0, this.ends_, this.stride);
+      }
+      this.orientedRevision_ = this.getRevision();
+    }
+    return this.orientedFlatCoordinates_;
+  };
+
+
+  /**
+   * @inheritDoc
+   */
+  getSimplifiedGeometryInternal(squaredTolerance) {
+    const simplifiedFlatCoordinates = [];
+    const simplifiedEnds = [];
+    simplifiedFlatCoordinates.length = quantizeArray(
+      this.flatCoordinates, 0, this.ends_, this.stride,
+      Math.sqrt(squaredTolerance),
+      simplifiedFlatCoordinates, 0, simplifiedEnds);
+    const simplifiedPolygon = new Polygon(null);
+    simplifiedPolygon.setFlatCoordinates(
+      GeometryLayout.XY, simplifiedFlatCoordinates, simplifiedEnds);
+    return simplifiedPolygon;
+  };
+
+
+  /**
+   * @inheritDoc
+   * @api
+   */
+  getType() {
+    return GeometryType.POLYGON;
+  };
+
+
+  /**
+   * @inheritDoc
+   * @api
+   */
+  intersectsExtent(extent) {
+    return intersectsLinearRingArray(
+      this.getOrientedFlatCoordinates(), 0, this.ends_, this.stride, extent);
+  };
+
+
+  /**
+   * Set the coordinates of the polygon.
+   * @param {Array.<Array.<ol.Coordinate>>} coordinates Coordinates.
+   * @param {ol.geom.GeometryLayout=} opt_layout Layout.
+   * @override
+   * @api
+   */
+  setCoordinates(coordinates, opt_layout) {
+    if (!coordinates) {
+      this.setFlatCoordinates(GeometryLayout.XY, null, this.ends_);
+    } else {
+      this.setLayout(opt_layout, coordinates, 2);
+      if (!this.flatCoordinates) {
+        this.flatCoordinates = [];
+      }
+      const ends = deflateCoordinatesArray(
+        this.flatCoordinates, 0, coordinates, this.stride, this.ends_);
+      this.flatCoordinates.length = ends.length === 0 ? 0 : ends[ends.length - 1];
+      this.changed();
+    }
+  };
+
+
+  /**
+   * @param {ol.geom.GeometryLayout} layout Layout.
+   * @param {Array.<number>} flatCoordinates Flat coordinates.
+   * @param {Array.<number>} ends Ends.
+   */
+  setFlatCoordinates(layout, flatCoordinates, ends) {
+    this.setFlatCoordinatesInternal(layout, flatCoordinates);
+    this.ends_ = ends;
+    this.changed();
+  };
+}
 
 export default Polygon;
 

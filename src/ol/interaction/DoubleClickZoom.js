@@ -1,7 +1,6 @@
 /**
  * @module ol/interaction/DoubleClickZoom
  */
-import {inherits} from '../index.js';
 import MapBrowserEventType from '../MapBrowserEventType.js';
 import Interaction from '../interaction/Interaction.js';
 
@@ -14,29 +13,29 @@ import Interaction from '../interaction/Interaction.js';
  * @param {olx.interaction.DoubleClickZoomOptions=} opt_options Options.
  * @api
  */
-const DoubleClickZoom = function(opt_options) {
+class DoubleClickZoom extends Interaction {
+  constructor(opt_options) {
 
-  const options = opt_options ? opt_options : {};
+    const options = opt_options ? opt_options : {};
 
-  /**
-   * @private
-   * @type {number}
-   */
-  this.delta_ = options.delta ? options.delta : 1;
+    super({
+      handleEvent: handleEvent
+    });
 
-  Interaction.call(this, {
-    handleEvent: handleEvent
-  });
+    /**
+     * @private
+     * @type {number}
+     */
+    this.delta_ = options.delta ? options.delta : 1;
 
-  /**
-   * @private
-   * @type {number}
-   */
-  this.duration_ = options.duration !== undefined ? options.duration : 250;
+    /**
+     * @private
+     * @type {number}
+     */
+    this.duration_ = options.duration !== undefined ? options.duration : 250;
 
-};
-
-inherits(DoubleClickZoom, Interaction);
+  }
+}
 
 
 /**

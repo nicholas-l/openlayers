@@ -18,55 +18,59 @@ import {disable} from '../rotationconstraint.js';
  * @param {olx.interaction.PinchRotateOptions=} opt_options Options.
  * @api
  */
-const PinchRotate = function(opt_options) {
+class PinchRotate extends PointerInteraction {
+  constructor(opt_options) {
 
-  PointerInteraction.call(this, {
-    handleDownEvent: handleDownEvent,
-    handleDragEvent: handleDragEvent,
-    handleUpEvent: handleUpEvent
-  });
+    super({
+      handleDownEvent: handleDownEvent,
+      handleDragEvent: handleDragEvent,
+      handleUpEvent: handleUpEvent
+    });
 
-  const options = opt_options || {};
+    const options = opt_options || {};
 
-  /**
-   * @private
-   * @type {ol.Coordinate}
-   */
-  this.anchor_ = null;
+    /**
+     * @private
+     * @type {ol.Coordinate}
+     */
+    this.anchor_ = null;
 
-  /**
-   * @private
-   * @type {number|undefined}
-   */
-  this.lastAngle_ = undefined;
+    /**
+     * @private
+     * @type {number|undefined}
+     */
+    this.lastAngle_ = undefined;
 
-  /**
-   * @private
-   * @type {boolean}
-   */
-  this.rotating_ = false;
+    /**
+     * @private
+     * @type {boolean}
+     */
+    this.rotating_ = false;
 
-  /**
-   * @private
-   * @type {number}
-   */
-  this.rotationDelta_ = 0.0;
+    /**
+     * @private
+     * @type {number}
+     */
+    this.rotationDelta_ = 0.0;
 
-  /**
-   * @private
-   * @type {number}
-   */
-  this.threshold_ = options.threshold !== undefined ? options.threshold : 0.3;
+    /**
+     * @private
+     * @type {number}
+     */
+    this.threshold_ = options.threshold !== undefined ? options.threshold : 0.3;
 
-  /**
-   * @private
-   * @type {number}
-   */
-  this.duration_ = options.duration !== undefined ? options.duration : 250;
+    /**
+     * @private
+     * @type {number}
+     */
+    this.duration_ = options.duration !== undefined ? options.duration : 250;
 
-};
-
-inherits(PinchRotate, PointerInteraction);
+    /**
+     * @inheritDoc
+     */
+    this.shouldStopEvent = FALSE;
+  }
+}
 
 
 /**
@@ -163,10 +167,5 @@ function handleDownEvent(mapBrowserEvent) {
   }
 }
 
-
-/**
- * @inheritDoc
- */
-PinchRotate.prototype.shouldStopEvent = FALSE;
 
 export default PinchRotate;

@@ -19,27 +19,25 @@ import Layer from '../layer/Layer.js';
  * @param {olx.layer.ImageOptions=} opt_options Layer options.
  * @api
  */
-const ImageLayer = function(opt_options) {
-  const options = opt_options ? opt_options : {};
-  Layer.call(this,  /** @type {olx.layer.LayerOptions} */ (options));
+class ImageLayer extends Layer {
+  constructor(opt_options) {
+    const options = opt_options ? opt_options : {};
+    super(/** @type {olx.layer.LayerOptions} */ (options));
 
-  /**
-   * The layer type.
-   * @protected
-   * @type {ol.LayerType}
-   */
-  this.type = LayerType.IMAGE;
+    /**
+     * The layer type.
+     * @protected
+     * @type {ol.LayerType}
+     */
+    this.type = LayerType.IMAGE;
+    /**
+     * Return the associated {@link ol.source.Image source} of the image layer.
+     * @function
+     * @return {ol.source.Image} Source.
+     * @api
+     */
+    this.getSource;
+  }
+}
 
-};
-
-inherits(ImageLayer, Layer);
-
-
-/**
- * Return the associated {@link ol.source.Image source} of the image layer.
- * @function
- * @return {ol.source.Image} Source.
- * @api
- */
-ImageLayer.prototype.getSource;
 export default ImageLayer;

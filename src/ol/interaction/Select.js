@@ -47,158 +47,225 @@ const SelectEventType = {
  * @fires ol.interaction.Select.Event
  * @api
  */
-const Select = function(opt_options) {
+class Select extends Interaction {
+  constructor(opt_options) {
 
-  Interaction.call(this, {
-    handleEvent: handleEvent
-  });
+    super({
+      handleEvent: handleEvent
+    });
 
-  const options = opt_options ? opt_options : {};
+    const options = opt_options ? opt_options : {};
 
-  /**
-   * @private
-   * @type {ol.EventsConditionType}
-   */
-  this.condition_ = options.condition ? options.condition : singleClick;
+    /**
+     * @private
+     * @type {ol.EventsConditionType}
+     */
+    this.condition_ = options.condition ? options.condition : singleClick;
 
-  /**
-   * @private
-   * @type {ol.EventsConditionType}
-   */
-  this.addCondition_ = options.addCondition ? options.addCondition : never;
+    /**
+     * @private
+     * @type {ol.EventsConditionType}
+     */
+    this.addCondition_ = options.addCondition ? options.addCondition : never;
 
-  /**
-   * @private
-   * @type {ol.EventsConditionType}
-   */
-  this.removeCondition_ = options.removeCondition ? options.removeCondition : never;
+    /**
+     * @private
+     * @type {ol.EventsConditionType}
+     */
+    this.removeCondition_ = options.removeCondition ? options.removeCondition : never;
 
-  /**
-   * @private
-   * @type {ol.EventsConditionType}
-   */
-  this.toggleCondition_ = options.toggleCondition ? options.toggleCondition : shiftKeyOnly;
+    /**
+     * @private
+     * @type {ol.EventsConditionType}
+     */
+    this.toggleCondition_ = options.toggleCondition ? options.toggleCondition : shiftKeyOnly;
 
-  /**
-   * @private
-   * @type {boolean}
-   */
-  this.multi_ = options.multi ? options.multi : false;
+    /**
+     * @private
+     * @type {boolean}
+     */
+    this.multi_ = options.multi ? options.multi : false;
 
-  /**
-   * @private
-   * @type {ol.SelectFilterFunction}
-   */
-  this.filter_ = options.filter ? options.filter : TRUE;
+    /**
+     * @private
+     * @type {ol.SelectFilterFunction}
+     */
+    this.filter_ = options.filter ? options.filter : TRUE;
 
-  /**
-   * @private
-   * @type {number}
-   */
-  this.hitTolerance_ = options.hitTolerance ? options.hitTolerance : 0;
+    /**
+     * @private
+     * @type {number}
+     */
+    this.hitTolerance_ = options.hitTolerance ? options.hitTolerance : 0;
 
-  const featureOverlay = new VectorLayer({
-    source: new VectorSource({
-      useSpatialIndex: false,
-      features: options.features,
-      wrapX: options.wrapX
-    }),
-    style: options.style ? options.style :
-      Select.getDefaultStyleFunction(),
-    updateWhileAnimating: true,
-    updateWhileInteracting: true
-  });
+    const featureOverlay = new VectorLayer({
+      source: new VectorSource({
+        useSpatialIndex: false,
+        features: options.features,
+        wrapX: options.wrapX
+      }),
+      style: options.style ? options.style :
+        Select.getDefaultStyleFunction(),
+      updateWhileAnimating: true,
+      updateWhileInteracting: true
+    });
 
-  /**
-   * @private
-   * @type {ol.layer.Vector}
-   */
-  this.featureOverlay_ = featureOverlay;
+    /**
+     * @private
+     * @type {ol.layer.Vector}
+     */
+    this.featureOverlay_ = featureOverlay;
 
-  /** @type {function(ol.layer.Layer): boolean} */
-  let layerFilter;
-  if (options.layers) {
-    if (typeof options.layers === 'function') {
-      layerFilter = options.layers;
+    /** @type {function(ol.layer.Layer): boolean} */
+    let layerFilter;
+    if (options.layers) {
+      if (typeof options.layers === 'function') {
+        layerFilter = options.layers;
+      } else {
+        const layers = options.layers;
+        layerFilter = function(layer) {
+          return includes(layers, layer);
+        };
+      }
     } else {
-      const layers = options.layers;
-      layerFilter = function(layer) {
-        return includes(layers, layer);
-      };
+      layerFilter = TRUE;
     }
-  } else {
-    layerFilter = TRUE;
+
+    /**
+     * @private
+     * @type {function(ol.layer.Layer): boolean}
+     */
+    this.layerFilter_ = layerFilter;
+
+    /**
+     * An association between selected feature (key)
+     * and layer (value)
+     * @private
+     * @type {Object.<number, ol.layer.Layer>}
+     */
+    this.featureLayerAssociation_ = {};
+
+    const features = this.featureOverlay_.getSource().getFeaturesCollection();
+    listen(features, CollectionEventType.ADD,
+      this.addFeature_, this);
+    listen(features, CollectionEventType.REMOVE,
+      this.removeFeature_, this);
+
   }
 
   /**
+   * @param {ol.Feature|ol.render.Feature} feature Feature.
+   * @param {ol.layer.Layer} layer Layer.
    * @private
-   * @type {function(ol.layer.Layer): boolean}
    */
-  this.layerFilter_ = layerFilter;
+  addFeatureLayerAssociation_(feature, layer) {
+    const key = getUid(feature);
+    this.featureLayerAssociation_[key] = layer;
+  }
+
 
   /**
-   * An association between selected feature (key)
-   * and layer (value)
-   * @private
-   * @type {Object.<number, ol.layer.Layer>}
+   * Get the selected features.
+   * @return {ol.Collection.<ol.Feature>} Features collection.
+   * @api
    */
-  this.featureLayerAssociation_ = {};
-
-  const features = this.featureOverlay_.getSource().getFeaturesCollection();
-  listen(features, CollectionEventType.ADD,
-    this.addFeature_, this);
-  listen(features, CollectionEventType.REMOVE,
-    this.removeFeature_, this);
-
-};
-
-inherits(Select, Interaction);
+  getFeatures() {
+    return this.featureOverlay_.getSource().getFeaturesCollection();
+  }
 
 
-/**
- * @param {ol.Feature|ol.render.Feature} feature Feature.
- * @param {ol.layer.Layer} layer Layer.
- * @private
- */
-Select.prototype.addFeatureLayerAssociation_ = function(feature, layer) {
-  const key = getUid(feature);
-  this.featureLayerAssociation_[key] = layer;
-};
+  /**
+   * Returns the Hit-detection tolerance.
+   * @returns {number} Hit tolerance in pixels.
+   * @api
+   */
+  getHitTolerance() {
+    return this.hitTolerance_;
+  }
 
 
-/**
- * Get the selected features.
- * @return {ol.Collection.<ol.Feature>} Features collection.
- * @api
- */
-Select.prototype.getFeatures = function() {
-  return this.featureOverlay_.getSource().getFeaturesCollection();
-};
+  /**
+   * Returns the associated {@link ol.layer.Vector vectorlayer} of
+   * the (last) selected feature. Note that this will not work with any
+   * programmatic method like pushing features to
+   * {@link ol.interaction.Select#getFeatures collection}.
+   * @param {ol.Feature|ol.render.Feature} feature Feature
+   * @return {ol.layer.Vector} Layer.
+   * @api
+   */
+  getLayer(feature) {
+    const key = getUid(feature);
+    return /** @type {ol.layer.Vector} */ (this.featureLayerAssociation_[key]);
+  };
 
 
-/**
- * Returns the Hit-detection tolerance.
- * @returns {number} Hit tolerance in pixels.
- * @api
- */
-Select.prototype.getHitTolerance = function() {
-  return this.hitTolerance_;
-};
+  /**
+   * @param {ol.CollectionEvent} evt Event.
+   * @private
+   */
+  addFeature_(evt) {
+    const map = this.getMap();
+    if (map) {
+      map.skipFeature(/** @type {ol.Feature} */ (evt.element));
+    }
+  }
 
 
-/**
- * Returns the associated {@link ol.layer.Vector vectorlayer} of
- * the (last) selected feature. Note that this will not work with any
- * programmatic method like pushing features to
- * {@link ol.interaction.Select#getFeatures collection}.
- * @param {ol.Feature|ol.render.Feature} feature Feature
- * @return {ol.layer.Vector} Layer.
- * @api
- */
-Select.prototype.getLayer = function(feature) {
-  const key = getUid(feature);
-  return /** @type {ol.layer.Vector} */ (this.featureLayerAssociation_[key]);
-};
+  /**
+   * @param {ol.CollectionEvent} evt Event.
+   * @private
+   */
+  removeFeature_(evt) {
+    const map = this.getMap();
+    if (map) {
+      map.unskipFeature(/** @type {ol.Feature} */ (evt.element));
+    }
+  }
+
+
+  /**
+   * @param {ol.Feature|ol.render.Feature} feature Feature.
+   * @private
+   */
+  removeFeatureLayerAssociation_(feature) {
+    const key = getUid(feature);
+    delete this.featureLayerAssociation_[key];
+  };
+
+
+  /**
+   * Remove the interaction from its current map, if any,  and attach it to a new
+   * map, if any. Pass `null` to just remove the interaction from the current map.
+   * @param {ol.PluggableMap} map Map.
+   * @override
+   * @api
+   */
+  setMap(map) {
+    const currentMap = this.getMap();
+    const selectedFeatures =
+        this.featureOverlay_.getSource().getFeaturesCollection();
+    if (currentMap) {
+      selectedFeatures.forEach(currentMap.unskipFeature.bind(currentMap));
+    }
+    Interaction.prototype.setMap.call(this, map);
+    this.featureOverlay_.setMap(map);
+    if (map) {
+      selectedFeatures.forEach(map.skipFeature.bind(map));
+    }
+  };
+
+
+  /**
+   * Hit-detection tolerance. Pixels inside the radius around the given position
+   * will be checked for features. This only works for the canvas renderer and
+   * not for WebGL.
+   * @param {number} hitTolerance Hit tolerance in pixels.
+   * @api
+   */
+  setHitTolerance(hitTolerance) {
+    this.hitTolerance_ = hitTolerance;
+  }
+}
 
 
 /**
@@ -296,38 +363,6 @@ function handleEvent(mapBrowserEvent) {
 }
 
 
-/**
- * Hit-detection tolerance. Pixels inside the radius around the given position
- * will be checked for features. This only works for the canvas renderer and
- * not for WebGL.
- * @param {number} hitTolerance Hit tolerance in pixels.
- * @api
- */
-Select.prototype.setHitTolerance = function(hitTolerance) {
-  this.hitTolerance_ = hitTolerance;
-};
-
-
-/**
- * Remove the interaction from its current map, if any,  and attach it to a new
- * map, if any. Pass `null` to just remove the interaction from the current map.
- * @param {ol.PluggableMap} map Map.
- * @override
- * @api
- */
-Select.prototype.setMap = function(map) {
-  const currentMap = this.getMap();
-  const selectedFeatures =
-      this.featureOverlay_.getSource().getFeaturesCollection();
-  if (currentMap) {
-    selectedFeatures.forEach(currentMap.unskipFeature.bind(currentMap));
-  }
-  Interaction.prototype.setMap.call(this, map);
-  this.featureOverlay_.setMap(map);
-  if (map) {
-    selectedFeatures.forEach(map.skipFeature.bind(map));
-  }
-};
 
 
 /**
@@ -347,38 +382,6 @@ Select.getDefaultStyleFunction = function() {
 };
 
 
-/**
- * @param {ol.CollectionEvent} evt Event.
- * @private
- */
-Select.prototype.addFeature_ = function(evt) {
-  const map = this.getMap();
-  if (map) {
-    map.skipFeature(/** @type {ol.Feature} */ (evt.element));
-  }
-};
-
-
-/**
- * @param {ol.CollectionEvent} evt Event.
- * @private
- */
-Select.prototype.removeFeature_ = function(evt) {
-  const map = this.getMap();
-  if (map) {
-    map.unskipFeature(/** @type {ol.Feature} */ (evt.element));
-  }
-};
-
-
-/**
- * @param {ol.Feature|ol.render.Feature} feature Feature.
- * @private
- */
-Select.prototype.removeFeatureLayerAssociation_ = function(feature) {
-  const key = getUid(feature);
-  delete this.featureLayerAssociation_[key];
-};
 
 
 /**

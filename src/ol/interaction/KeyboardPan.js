@@ -25,47 +25,47 @@ import Interaction from '../interaction/Interaction.js';
  * @param {olx.interaction.KeyboardPanOptions=} opt_options Options.
  * @api
  */
-const KeyboardPan = function(opt_options) {
+class KeyboardPan extends Interaction {
+  constructor(opt_options) {
 
-  Interaction.call(this, {
-    handleEvent: handleEvent
-  });
+    super({
+      handleEvent: handleEvent
+    });
 
-  const options = opt_options || {};
+    const options = opt_options || {};
 
-  /**
-   * @private
-   * @param {ol.MapBrowserEvent} mapBrowserEvent Browser event.
-   * @return {boolean} Combined condition result.
-   */
-  this.defaultCondition_ = function(mapBrowserEvent) {
-    return noModifierKeys(mapBrowserEvent) &&
-      targetNotEditable(mapBrowserEvent);
-  };
+    /**
+     * @private
+     * @param {ol.MapBrowserEvent} mapBrowserEvent Browser event.
+     * @return {boolean} Combined condition result.
+     */
+    this.defaultCondition_ = function(mapBrowserEvent) {
+      return noModifierKeys(mapBrowserEvent) &&
+        targetNotEditable(mapBrowserEvent);
+    };
 
-  /**
-   * @private
-   * @type {ol.EventsConditionType}
-   */
-  this.condition_ = options.condition !== undefined ?
-    options.condition : this.defaultCondition_;
+    /**
+     * @private
+     * @type {ol.EventsConditionType}
+     */
+    this.condition_ = options.condition !== undefined ?
+      options.condition : this.defaultCondition_;
 
-  /**
-   * @private
-   * @type {number}
-   */
-  this.duration_ = options.duration !== undefined ? options.duration : 100;
+    /**
+     * @private
+     * @type {number}
+     */
+    this.duration_ = options.duration !== undefined ? options.duration : 100;
 
-  /**
-   * @private
-   * @type {number}
-   */
-  this.pixelDelta_ = options.pixelDelta !== undefined ?
-    options.pixelDelta : 128;
+    /**
+     * @private
+     * @type {number}
+     */
+    this.pixelDelta_ = options.pixelDelta !== undefined ?
+      options.pixelDelta : 128;
 
-};
-
-inherits(KeyboardPan, Interaction);
+  }
+}
 
 /**
  * Handles the {@link ol.MapBrowserEvent map browser event} if it was a

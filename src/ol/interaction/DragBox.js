@@ -53,49 +53,68 @@ const DragBoxEventType = {
  * @param {olx.interaction.DragBoxOptions=} opt_options Options.
  * @api
  */
-const DragBox = function(opt_options) {
+class DragBox extends PointerInteraction {
+  constructor(opt_options) {
 
-  PointerInteraction.call(this, {
-    handleDownEvent: handleDownEvent,
-    handleDragEvent: handleDragEvent,
-    handleUpEvent: handleUpEvent
-  });
+    super({
+      handleDownEvent: handleDownEvent,
+      handleDragEvent: handleDragEvent,
+      handleUpEvent: handleUpEvent
+    });
 
-  const options = opt_options ? opt_options : {};
+    const options = opt_options ? opt_options : {};
+
+    /**
+     * @type {ol.render.Box}
+     * @private
+     */
+    this.box_ = new RenderBox(options.className || 'ol-dragbox');
+
+    /**
+     * @type {number}
+     * @private
+     */
+    this.minArea_ = options.minArea !== undefined ? options.minArea : 64;
+
+    /**
+     * @type {ol.Pixel}
+     * @private
+     */
+    this.startPixel_ = null;
+
+    /**
+     * @private
+     * @type {ol.EventsConditionType}
+     */
+    this.condition_ = options.condition ? options.condition : always;
+
+    /**
+     * @private
+     * @type {ol.DragBoxEndConditionType}
+     */
+    this.boxEndCondition_ = options.boxEndCondition ?
+      options.boxEndCondition : DragBox.defaultBoxEndCondition;
+
+    /**
+     * To be overridden by child classes.
+     * FIXME: use constructor option instead of relying on overriding.
+     * @param {ol.MapBrowserEvent} mapBrowserEvent Map browser event.
+     * @protected
+     */
+    this.onBoxEnd = nullFunction;
+  }
 
   /**
-   * @type {ol.render.Box}
-   * @private
+   * Returns geometry of last drawn box.
+   * @return {ol.geom.Polygon} Geometry.
+   * @api
    */
-  this.box_ = new RenderBox(options.className || 'ol-dragbox');
+  getGeometry() {
+    return this.box_.getGeometry();
+  };
 
-  /**
-   * @type {number}
-   * @private
-   */
-  this.minArea_ = options.minArea !== undefined ? options.minArea : 64;
 
-  /**
-   * @type {ol.Pixel}
-   * @private
-   */
-  this.startPixel_ = null;
-
-  /**
-   * @private
-   * @type {ol.EventsConditionType}
-   */
-  this.condition_ = options.condition ? options.condition : always;
-
-  /**
-   * @private
-   * @type {ol.DragBoxEndConditionType}
-   */
-  this.boxEndCondition_ = options.boxEndCondition ?
-    options.boxEndCondition : DragBox.defaultBoxEndCondition;
-};
-
-inherits(DragBox, PointerInteraction);
+}
 
 
 /**
@@ -131,23 +150,7 @@ function handleDragEvent(mapBrowserEvent) {
 }
 
 
-/**
- * Returns geometry of last drawn box.
- * @return {ol.geom.Polygon} Geometry.
- * @api
- */
-DragBox.prototype.getGeometry = function() {
-  return this.box_.getGeometry();
-};
 
-
-/**
- * To be overridden by child classes.
- * FIXME: use constructor option instead of relying on overriding.
- * @param {ol.MapBrowserEvent} mapBrowserEvent Map browser event.
- * @protected
- */
-DragBox.prototype.onBoxEnd = nullFunction;
 
 
 /**

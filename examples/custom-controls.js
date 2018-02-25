@@ -1,4 +1,4 @@
-import {inherits} from '../src/ol/index.js';
+
 import Map from '../src/ol/Map.js';
 import View from '../src/ol/View.js';
 import {defaults as defaultControls} from '../src/ol/control.js';
@@ -24,32 +24,33 @@ const app = window.app;
  * @extends {ol.control.Control}
  * @param {Object=} opt_options Control options.
  */
-app.RotateNorthControl = function(opt_options) {
+app.RotateNorthControl = class extends Control {
+  constructor(opt_options) {
 
-  const options = opt_options || {};
+    const options = opt_options || {};
 
-  const button = document.createElement('button');
-  button.innerHTML = 'N';
+    const button = document.createElement('button');
+    button.innerHTML = 'N';
 
-  const this_ = this;
-  const handleRotateNorth = function() {
-    this_.getMap().getView().setRotation(0);
-  };
 
-  button.addEventListener('click', handleRotateNorth, false);
-  button.addEventListener('touchstart', handleRotateNorth, false);
+    const element = document.createElement('div');
+    element.className = 'rotate-north ol-unselectable ol-control';
+    element.appendChild(button);
 
-  const element = document.createElement('div');
-  element.className = 'rotate-north ol-unselectable ol-control';
-  element.appendChild(button);
+    super({
+      element: element,
+      target: options.target
+    });
+    const this_ = this;
+    const handleRotateNorth = function() {
+      this_.getMap().getView().setRotation(0);
+    };
 
-  Control.call(this, {
-    element: element,
-    target: options.target
-  });
+    button.addEventListener('click', handleRotateNorth, false);
+    button.addEventListener('touchstart', handleRotateNorth, false);
 
+  }
 };
-inherits(app.RotateNorthControl, Control);
 
 
 //

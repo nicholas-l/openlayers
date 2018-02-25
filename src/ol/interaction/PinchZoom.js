@@ -17,49 +17,53 @@ import PointerInteraction from '../interaction/Pointer.js';
  * @param {olx.interaction.PinchZoomOptions=} opt_options Options.
  * @api
  */
-const PinchZoom = function(opt_options) {
+class PinchZoom extends PointerInteraction {
+  constructor(opt_options) {
 
-  PointerInteraction.call(this, {
-    handleDownEvent: handleDownEvent,
-    handleDragEvent: handleDragEvent,
-    handleUpEvent: handleUpEvent
-  });
+    super({
+      handleDownEvent: handleDownEvent,
+      handleDragEvent: handleDragEvent,
+      handleUpEvent: handleUpEvent
+    });
 
-  const options = opt_options ? opt_options : {};
+    const options = opt_options ? opt_options : {};
 
-  /**
-   * @private
-   * @type {boolean}
-   */
-  this.constrainResolution_ = options.constrainResolution || false;
+    /**
+     * @private
+     * @type {boolean}
+     */
+    this.constrainResolution_ = options.constrainResolution || false;
 
-  /**
-   * @private
-   * @type {ol.Coordinate}
-   */
-  this.anchor_ = null;
+    /**
+     * @private
+     * @type {ol.Coordinate}
+     */
+    this.anchor_ = null;
 
-  /**
-   * @private
-   * @type {number}
-   */
-  this.duration_ = options.duration !== undefined ? options.duration : 400;
+    /**
+     * @private
+     * @type {number}
+     */
+    this.duration_ = options.duration !== undefined ? options.duration : 400;
 
-  /**
-   * @private
-   * @type {number|undefined}
-   */
-  this.lastDistance_ = undefined;
+    /**
+     * @private
+     * @type {number|undefined}
+     */
+    this.lastDistance_ = undefined;
 
-  /**
-   * @private
-   * @type {number}
-   */
-  this.lastScaleDelta_ = 1;
+    /**
+     * @private
+     * @type {number}
+     */
+    this.lastScaleDelta_ = 1;
 
-};
-
-inherits(PinchZoom, PointerInteraction);
+    /**
+     * @inheritDoc
+     */
+    this.shouldStopEvent = FALSE;
+  }
+}
 
 
 /**
@@ -162,9 +166,4 @@ function handleDownEvent(mapBrowserEvent) {
   }
 }
 
-
-/**
- * @inheritDoc
- */
-PinchZoom.prototype.shouldStopEvent = FALSE;
 export default PinchZoom;

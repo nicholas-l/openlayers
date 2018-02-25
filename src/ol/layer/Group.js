@@ -35,196 +35,196 @@ const Property = {
  * @param {olx.layer.GroupOptions=} opt_options Layer options.
  * @api
  */
-const LayerGroup = function(opt_options) {
+class LayerGroup extends BaseLayer {
+  constructor(opt_options) {
 
-  const options = opt_options || {};
-  const baseOptions = /** @type {olx.layer.GroupOptions} */ (assign({}, options));
-  delete baseOptions.layers;
+    const options = opt_options || {};
+    const baseOptions = /** @type {olx.layer.GroupOptions} */ (assign({}, options));
+    delete baseOptions.layers;
 
-  let layers = options.layers;
+    let layers = options.layers;
 
-  BaseLayer.call(this, baseOptions);
+    super(baseOptions);
 
-  /**
-   * @private
-   * @type {Array.<ol.EventsKey>}
-   */
-  this.layersListenerKeys_ = [];
+    /**
+     * @private
+     * @type {Array.<ol.EventsKey>}
+     */
+    this.layersListenerKeys_ = [];
 
-  /**
-   * @private
-   * @type {Object.<string, Array.<ol.EventsKey>>}
-   */
-  this.listenerKeys_ = {};
+    /**
+     * @private
+     * @type {Object.<string, Array.<ol.EventsKey>>}
+     */
+    this.listenerKeys_ = {};
 
-  listen(this,
-    BaseObject.getChangeEventType(Property.LAYERS),
-    this.handleLayersChanged_, this);
+    listen(this,
+      BaseObject.getChangeEventType(Property.LAYERS),
+      this.handleLayersChanged_, this);
 
-  if (layers) {
-    if (Array.isArray(layers)) {
-      layers = new Collection(layers.slice(), {unique: true});
+    if (layers) {
+      if (Array.isArray(layers)) {
+        layers = new Collection(layers.slice(), {unique: true});
+      } else {
+        assert(layers instanceof Collection,
+          43); // Expected `layers` to be an array or an `ol.Collection`
+        layers = layers;
+      }
     } else {
-      assert(layers instanceof Collection,
-        43); // Expected `layers` to be an array or an `ol.Collection`
-      layers = layers;
+      layers = new Collection(undefined, {unique: true});
     }
-  } else {
-    layers = new Collection(undefined, {unique: true});
-  }
 
-  this.setLayers(layers);
+    this.setLayers(layers);
 
-};
-
-inherits(LayerGroup, BaseLayer);
+  };
 
 
-/**
- * @private
- */
-LayerGroup.prototype.handleLayerChange_ = function() {
-  this.changed();
-};
+  /**
+   * @private
+   */
+  handleLayerChange_() {
+    this.changed();
+  };
 
 
-/**
- * @param {ol.events.Event} event Event.
- * @private
- */
-LayerGroup.prototype.handleLayersChanged_ = function(event) {
-  this.layersListenerKeys_.forEach(unlistenByKey);
-  this.layersListenerKeys_.length = 0;
+  /**
+   * @param {ol.events.Event} event Event.
+   * @private
+   */
+  handleLayersChanged_(event) {
+    this.layersListenerKeys_.forEach(unlistenByKey);
+    this.layersListenerKeys_.length = 0;
 
-  const layers = this.getLayers();
-  this.layersListenerKeys_.push(
-    listen(layers, CollectionEventType.ADD, this.handleLayersAdd_, this),
-    listen(layers, CollectionEventType.REMOVE, this.handleLayersRemove_, this)
-  );
+    const layers = this.getLayers();
+    this.layersListenerKeys_.push(
+      listen(layers, CollectionEventType.ADD, this.handleLayersAdd_, this),
+      listen(layers, CollectionEventType.REMOVE, this.handleLayersRemove_, this)
+    );
 
-  for (const id in this.listenerKeys_) {
-    this.listenerKeys_[id].forEach(unlistenByKey);
-  }
-  clear(this.listenerKeys_);
+    for (const id in this.listenerKeys_) {
+      this.listenerKeys_[id].forEach(unlistenByKey);
+    }
+    clear(this.listenerKeys_);
 
-  const layersArray = layers.getArray();
-  for (let i = 0, ii = layersArray.length; i < ii; i++) {
-    const layer = layersArray[i];
-    this.listenerKeys_[getUid(layer).toString()] = [
+    const layersArray = layers.getArray();
+    for (let i = 0, ii = layersArray.length; i < ii; i++) {
+      const layer = layersArray[i];
+      this.listenerKeys_[getUid(layer).toString()] = [
+        listen(layer, ObjectEventType.PROPERTYCHANGE, this.handleLayerChange_, this),
+        listen(layer, EventType.CHANGE, this.handleLayerChange_, this)
+      ];
+    }
+
+    this.changed();
+  };
+
+
+  /**
+   * @param {ol.CollectionEvent} collectionEvent CollectionEvent.
+   * @private
+   */
+  handleLayersAdd_(collectionEvent) {
+    const layer = /** @type {ol.layer.Base} */ (collectionEvent.element);
+    const key = getUid(layer).toString();
+    this.listenerKeys_[key] = [
       listen(layer, ObjectEventType.PROPERTYCHANGE, this.handleLayerChange_, this),
       listen(layer, EventType.CHANGE, this.handleLayerChange_, this)
     ];
+    this.changed();
+  };
+
+
+  /**
+   * @param {ol.CollectionEvent} collectionEvent CollectionEvent.
+   * @private
+   */
+  handleLayersRemove_(collectionEvent) {
+    const layer = /** @type {ol.layer.Base} */ (collectionEvent.element);
+    const key = getUid(layer).toString();
+    this.listenerKeys_[key].forEach(unlistenByKey);
+    delete this.listenerKeys_[key];
+    this.changed();
   }
 
-  this.changed();
-};
+
+  /**
+   * Returns the {@link ol.Collection collection} of {@link ol.layer.Layer layers}
+   * in this group.
+   * @return {!ol.Collection.<ol.layer.Base>} Collection of
+   *   {@link ol.layer.Base layers} that are part of this group.
+   * @observable
+   * @api
+   */
+  getLayers() {
+    return /** @type {!ol.Collection.<ol.layer.Base>} */ (this.get(Property.LAYERS));
+  }
 
 
-/**
- * @param {ol.CollectionEvent} collectionEvent CollectionEvent.
- * @private
- */
-LayerGroup.prototype.handleLayersAdd_ = function(collectionEvent) {
-  const layer = /** @type {ol.layer.Base} */ (collectionEvent.element);
-  const key = getUid(layer).toString();
-  this.listenerKeys_[key] = [
-    listen(layer, ObjectEventType.PROPERTYCHANGE, this.handleLayerChange_, this),
-    listen(layer, EventType.CHANGE, this.handleLayerChange_, this)
-  ];
-  this.changed();
-};
+  /**
+   * Set the {@link ol.Collection collection} of {@link ol.layer.Layer layers}
+   * in this group.
+   * @param {!ol.Collection.<ol.layer.Base>} layers Collection of
+   *   {@link ol.layer.Base layers} that are part of this group.
+   * @observable
+   * @api
+   */
+  setLayers(layers) {
+    this.set(Property.LAYERS, layers);
+  }
 
 
-/**
- * @param {ol.CollectionEvent} collectionEvent CollectionEvent.
- * @private
- */
-LayerGroup.prototype.handleLayersRemove_ = function(collectionEvent) {
-  const layer = /** @type {ol.layer.Base} */ (collectionEvent.element);
-  const key = getUid(layer).toString();
-  this.listenerKeys_[key].forEach(unlistenByKey);
-  delete this.listenerKeys_[key];
-  this.changed();
-};
+  /**
+   * @inheritDoc
+   */
+  getLayersArray(opt_array) {
+    const array = opt_array !== undefined ? opt_array : [];
+    this.getLayers().forEach(function(layer) {
+      layer.getLayersArray(array);
+    });
+    return array;
+  }
 
 
-/**
- * Returns the {@link ol.Collection collection} of {@link ol.layer.Layer layers}
- * in this group.
- * @return {!ol.Collection.<ol.layer.Base>} Collection of
- *   {@link ol.layer.Base layers} that are part of this group.
- * @observable
- * @api
- */
-LayerGroup.prototype.getLayers = function() {
-  return /** @type {!ol.Collection.<ol.layer.Base>} */ (this.get(Property.LAYERS));
-};
+  /**
+   * @inheritDoc
+   */
+  getLayerStatesArray(opt_states) {
+    const states = opt_states !== undefined ? opt_states : [];
 
+    const pos = states.length;
 
-/**
- * Set the {@link ol.Collection collection} of {@link ol.layer.Layer layers}
- * in this group.
- * @param {!ol.Collection.<ol.layer.Base>} layers Collection of
- *   {@link ol.layer.Base layers} that are part of this group.
- * @observable
- * @api
- */
-LayerGroup.prototype.setLayers = function(layers) {
-  this.set(Property.LAYERS, layers);
-};
+    this.getLayers().forEach(function(layer) {
+      layer.getLayerStatesArray(states);
+    });
 
-
-/**
- * @inheritDoc
- */
-LayerGroup.prototype.getLayersArray = function(opt_array) {
-  const array = opt_array !== undefined ? opt_array : [];
-  this.getLayers().forEach(function(layer) {
-    layer.getLayersArray(array);
-  });
-  return array;
-};
-
-
-/**
- * @inheritDoc
- */
-LayerGroup.prototype.getLayerStatesArray = function(opt_states) {
-  const states = opt_states !== undefined ? opt_states : [];
-
-  const pos = states.length;
-
-  this.getLayers().forEach(function(layer) {
-    layer.getLayerStatesArray(states);
-  });
-
-  const ownLayerState = this.getLayerState();
-  for (let i = pos, ii = states.length; i < ii; i++) {
-    const layerState = states[i];
-    layerState.opacity *= ownLayerState.opacity;
-    layerState.visible = layerState.visible && ownLayerState.visible;
-    layerState.maxResolution = Math.min(
-      layerState.maxResolution, ownLayerState.maxResolution);
-    layerState.minResolution = Math.max(
-      layerState.minResolution, ownLayerState.minResolution);
-    if (ownLayerState.extent !== undefined) {
-      if (layerState.extent !== undefined) {
-        layerState.extent = getIntersection(layerState.extent, ownLayerState.extent);
-      } else {
-        layerState.extent = ownLayerState.extent;
+    const ownLayerState = this.getLayerState();
+    for (let i = pos, ii = states.length; i < ii; i++) {
+      const layerState = states[i];
+      layerState.opacity *= ownLayerState.opacity;
+      layerState.visible = layerState.visible && ownLayerState.visible;
+      layerState.maxResolution = Math.min(
+        layerState.maxResolution, ownLayerState.maxResolution);
+      layerState.minResolution = Math.max(
+        layerState.minResolution, ownLayerState.minResolution);
+      if (ownLayerState.extent !== undefined) {
+        if (layerState.extent !== undefined) {
+          layerState.extent = getIntersection(layerState.extent, ownLayerState.extent);
+        } else {
+          layerState.extent = ownLayerState.extent;
+        }
       }
     }
+
+    return states;
   }
 
-  return states;
-};
 
-
-/**
- * @inheritDoc
- */
-LayerGroup.prototype.getSourceState = function() {
-  return SourceState.READY;
-};
+  /**
+   * @inheritDoc
+   */
+  getSourceState() {
+    return SourceState.READY;
+  }
+}
 
 export default LayerGroup;

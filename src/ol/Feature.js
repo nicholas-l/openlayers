@@ -4,7 +4,6 @@
 import {assert} from './asserts.js';
 import {listen, unlisten, unlistenByKey} from './events.js';
 import EventType from './events/EventType.js';
-import {inherits} from './index.js';
 import BaseObject from './Object.js';
 import Geometry from './geom/Geometry.js';
 import Style from './style/Style.js';
@@ -54,227 +53,226 @@ import Style from './style/Style.js';
  *     include a Geometry associated with a `geometry` key.
  * @api
  */
-const Feature = function(opt_geometryOrProperties) {
+class Feature extends BaseObject {
+  cosntructor(opt_geometryOrProperties) {
 
-  BaseObject.call(this);
+    super();
 
-  /**
-   * @private
-   * @type {number|string|undefined}
-   */
-  this.id_ = undefined;
+    /**
+     * @private
+     * @type {number|string|undefined}
+     */
+    this.id_ = undefined;
 
-  /**
-   * @type {string}
-   * @private
-   */
-  this.geometryName_ = 'geometry';
+    /**
+     * @type {string}
+     * @private
+     */
+    this.geometryName_ = 'geometry';
 
-  /**
-   * User provided style.
-   * @private
-   * @type {ol.style.Style|Array.<ol.style.Style>|ol.StyleFunction}
-   */
-  this.style_ = null;
+    /**
+     * User provided style.
+     * @private
+     * @type {ol.style.Style|Array.<ol.style.Style>|ol.StyleFunction}
+     */
+    this.style_ = null;
 
-  /**
-   * @private
-   * @type {ol.StyleFunction|undefined}
-   */
-  this.styleFunction_ = undefined;
+    /**
+     * @private
+     * @type {ol.StyleFunction|undefined}
+     */
+    this.styleFunction_ = undefined;
 
-  /**
-   * @private
-   * @type {?ol.EventsKey}
-   */
-  this.geometryChangeKey_ = null;
+    /**
+     * @private
+     * @type {?ol.EventsKey}
+     */
+    this.geometryChangeKey_ = null;
 
-  listen(
-    this, BaseObject.getChangeEventType(this.geometryName_),
-    this.handleGeometryChanged_, this);
+    listen(
+      this, BaseObject.getChangeEventType(this.geometryName_),
+      this.handleGeometryChanged_, this);
 
-  if (opt_geometryOrProperties !== undefined) {
-    if (opt_geometryOrProperties instanceof Geometry ||
-        !opt_geometryOrProperties) {
-      const geometry = opt_geometryOrProperties;
-      this.setGeometry(geometry);
-    } else {
-      /** @type {Object.<string, *>} */
-      const properties = opt_geometryOrProperties;
-      this.setProperties(properties);
+    if (opt_geometryOrProperties !== undefined) {
+      if (opt_geometryOrProperties instanceof Geometry ||
+          !opt_geometryOrProperties) {
+        const geometry = opt_geometryOrProperties;
+        this.setGeometry(geometry);
+      } else {
+        /** @type {Object.<string, *>} */
+        const properties = opt_geometryOrProperties;
+        this.setProperties(properties);
+      }
     }
   }
-};
-
-inherits(Feature, BaseObject);
 
 
-/**
- * Clone this feature. If the original feature has a geometry it
- * is also cloned. The feature id is not set in the clone.
- * @return {ol.Feature} The clone.
- * @api
- */
-Feature.prototype.clone = function() {
-  const clone = new Feature(this.getProperties());
-  clone.setGeometryName(this.getGeometryName());
-  const geometry = this.getGeometry();
-  if (geometry) {
-    clone.setGeometry(geometry.clone());
+  /**
+   * Clone this feature. If the original feature has a geometry it
+   * is also cloned. The feature id is not set in the clone.
+   * @return {ol.Feature} The clone.
+   * @api
+   */
+  clone() {
+    const clone = new Feature(this.getProperties());
+    clone.setGeometryName(this.getGeometryName());
+    const geometry = this.getGeometry();
+    if (geometry) {
+      clone.setGeometry(geometry.clone());
+    }
+    const style = this.getStyle();
+    if (style) {
+      clone.setStyle(style);
+    }
+    return clone;
   }
-  const style = this.getStyle();
-  if (style) {
-    clone.setStyle(style);
+
+
+  /**
+   * Get the feature's default geometry.  A feature may have any number of named
+   * geometries.  The "default" geometry (the one that is rendered by default) is
+   * set when calling {@link ol.Feature#setGeometry}.
+   * @return {ol.geom.Geometry|undefined} The default geometry for the feature.
+   * @api
+   * @observable
+   */
+  getGeometry() {
+    return /** @type {ol.geom.Geometry|undefined} */ (
+      this.get(this.geometryName_));
   }
-  return clone;
-};
 
 
-/**
- * Get the feature's default geometry.  A feature may have any number of named
- * geometries.  The "default" geometry (the one that is rendered by default) is
- * set when calling {@link ol.Feature#setGeometry}.
- * @return {ol.geom.Geometry|undefined} The default geometry for the feature.
- * @api
- * @observable
- */
-Feature.prototype.getGeometry = function() {
-  return /** @type {ol.geom.Geometry|undefined} */ (
-    this.get(this.geometryName_));
-};
-
-
-/**
- * Get the feature identifier.  This is a stable identifier for the feature and
- * is either set when reading data from a remote source or set explicitly by
- * calling {@link ol.Feature#setId}.
- * @return {number|string|undefined} Id.
- * @api
- */
-Feature.prototype.getId = function() {
-  return this.id_;
-};
-
-
-/**
- * Get the name of the feature's default geometry.  By default, the default
- * geometry is named `geometry`.
- * @return {string} Get the property name associated with the default geometry
- *     for this feature.
- * @api
- */
-Feature.prototype.getGeometryName = function() {
-  return this.geometryName_;
-};
-
-
-/**
- * Get the feature's style. Will return what was provided to the
- * {@link ol.Feature#setStyle} method.
- * @return {ol.style.Style|Array.<ol.style.Style>|ol.StyleFunction} The feature style.
- * @api
- */
-Feature.prototype.getStyle = function() {
-  return this.style_;
-};
-
-
-/**
- * Get the feature's style function.
- * @return {ol.StyleFunction|undefined} Return a function
- * representing the current style of this feature.
- * @api
- */
-Feature.prototype.getStyleFunction = function() {
-  return this.styleFunction_;
-};
-
-
-/**
- * @private
- */
-Feature.prototype.handleGeometryChange_ = function() {
-  this.changed();
-};
-
-
-/**
- * @private
- */
-Feature.prototype.handleGeometryChanged_ = function() {
-  if (this.geometryChangeKey_) {
-    unlistenByKey(this.geometryChangeKey_);
-    this.geometryChangeKey_ = null;
+  /**
+   * Get the feature identifier.  This is a stable identifier for the feature and
+   * is either set when reading data from a remote source or set explicitly by
+   * calling {@link ol.Feature#setId}.
+   * @return {number|string|undefined} Id.
+   * @api
+   */
+  getId() {
+    return this.id_;
   }
-  const geometry = this.getGeometry();
-  if (geometry) {
-    this.geometryChangeKey_ = listen(geometry,
-      EventType.CHANGE, this.handleGeometryChange_, this);
+
+
+  /**
+   * Get the name of the feature's default geometry.  By default, the default
+   * geometry is named `geometry`.
+   * @return {string} Get the property name associated with the default geometry
+   *     for this feature.
+   * @api
+   */
+  getGeometryName() {
+    return this.geometryName_;
   }
-  this.changed();
-};
 
 
-/**
- * Set the default geometry for the feature.  This will update the property
- * with the name returned by {@link ol.Feature#getGeometryName}.
- * @param {ol.geom.Geometry|undefined} geometry The new geometry.
- * @api
- * @observable
- */
-Feature.prototype.setGeometry = function(geometry) {
-  this.set(this.geometryName_, geometry);
-};
+  /**
+   * Get the feature's style. Will return what was provided to the
+   * {@link ol.Feature#setStyle} method.
+   * @return {ol.style.Style|Array.<ol.style.Style>|ol.StyleFunction} The feature style.
+   * @api
+   */
+  getStyle() {
+    return this.style_;
+  }
 
 
-/**
- * Set the style for the feature.  This can be a single style object, an array
- * of styles, or a function that takes a resolution and returns an array of
- * styles. If it is `null` the feature has no style (a `null` style).
- * @param {ol.style.Style|Array.<ol.style.Style>|ol.StyleFunction} style Style for this feature.
- * @api
- * @fires ol.events.Event#event:change
- */
-Feature.prototype.setStyle = function(style) {
-  this.style_ = style;
-  this.styleFunction_ = !style ? undefined : createStyleFunction(style);
-  this.changed();
-};
+  /**
+   * Get the feature's style function.
+   * @return {ol.StyleFunction|undefined} Return a function
+   * representing the current style of this feature.
+   * @api
+   */
+  getStyleFunction() {
+    return this.styleFunction_;
+  }
 
 
-/**
- * Set the feature id.  The feature id is considered stable and may be used when
- * requesting features or comparing identifiers returned from a remote source.
- * The feature id can be used with the {@link ol.source.Vector#getFeatureById}
- * method.
- * @param {number|string|undefined} id The feature id.
- * @api
- * @fires ol.events.Event#event:change
- */
-Feature.prototype.setId = function(id) {
-  this.id_ = id;
-  this.changed();
-};
+  /**
+   * @private
+   */
+  handleGeometryChange_() {
+    this.changed();
+  }
 
 
-/**
- * Set the property name to be used when getting the feature's default geometry.
- * When calling {@link ol.Feature#getGeometry}, the value of the property with
- * this name will be returned.
- * @param {string} name The property name of the default geometry.
- * @api
- */
-Feature.prototype.setGeometryName = function(name) {
-  unlisten(
-    this, BaseObject.getChangeEventType(this.geometryName_),
-    this.handleGeometryChanged_, this);
-  this.geometryName_ = name;
-  listen(
-    this, BaseObject.getChangeEventType(this.geometryName_),
-    this.handleGeometryChanged_, this);
-  this.handleGeometryChanged_();
-};
+  /**
+   * @private
+   */
+  handleGeometryChanged_() {
+    if (this.geometryChangeKey_) {
+      unlistenByKey(this.geometryChangeKey_);
+      this.geometryChangeKey_ = null;
+    }
+    const geometry = this.getGeometry();
+    if (geometry) {
+      this.geometryChangeKey_ = listen(geometry,
+        EventType.CHANGE, this.handleGeometryChange_, this);
+    }
+    this.changed();
+  }
 
+
+  /**
+   * Set the default geometry for the feature.  This will update the property
+   * with the name returned by {@link ol.Feature#getGeometryName}.
+   * @param {ol.geom.Geometry|undefined} geometry The new geometry.
+   * @api
+   * @observable
+   */
+  setGeometry(geometry) {
+    this.set(this.geometryName_, geometry);
+  }
+
+
+  /**
+   * Set the style for the feature.  This can be a single style object, an array
+   * of styles, or a function that takes a resolution and returns an array of
+   * styles. If it is `null` the feature has no style (a `null` style).
+   * @param {ol.style.Style|Array.<ol.style.Style>|ol.StyleFunction} style Style for this feature.
+   * @api
+   * @fires ol.events.Event#event:change
+   */
+  setStyle(style) {
+    this.style_ = style;
+    this.styleFunction_ = !style ? undefined : createStyleFunction(style);
+    this.changed();
+  }
+
+
+  /**
+   * Set the feature id.  The feature id is considered stable and may be used when
+   * requesting features or comparing identifiers returned from a remote source.
+   * The feature id can be used with the {@link ol.source.Vector#getFeatureById}
+   * method.
+   * @param {number|string|undefined} id The feature id.
+   * @api
+   * @fires ol.events.Event#event:change
+   */
+  setId(id) {
+    this.id_ = id;
+    this.changed();
+  }
+
+
+  /**
+   * Set the property name to be used when getting the feature's default geometry.
+   * When calling {@link ol.Feature#getGeometry}, the value of the property with
+   * this name will be returned.
+   * @param {string} name The property name of the default geometry.
+   * @api
+   */
+  setGeometryName(name) {
+    unlisten(
+      this, BaseObject.getChangeEventType(this.geometryName_),
+      this.handleGeometryChanged_, this);
+    this.geometryName_ = name;
+    listen(
+      this, BaseObject.getChangeEventType(this.geometryName_),
+      this.handleGeometryChanged_, this);
+    this.handleGeometryChanged_();
+  }
+}
 
 /**
  * Convert the provided object into a feature style function.  Functions passed

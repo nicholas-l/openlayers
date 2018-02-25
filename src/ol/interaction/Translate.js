@@ -22,70 +22,148 @@ import TranslateEventType from '../interaction/TranslateEventType.js';
  * @param {olx.interaction.TranslateOptions=} opt_options Options.
  * @api
  */
-const Translate = function(opt_options) {
-  PointerInteraction.call(this, {
-    handleDownEvent: handleDownEvent,
-    handleDragEvent: handleDragEvent,
-    handleMoveEvent: handleMoveEvent,
-    handleUpEvent: handleUpEvent
-  });
+class Translate extends PointerInteraction {
+  constructor(opt_options) {
+    super({
+      handleDownEvent: handleDownEvent,
+      handleDragEvent: handleDragEvent,
+      handleMoveEvent: handleMoveEvent,
+      handleUpEvent: handleUpEvent
+    });
 
-  const options = opt_options ? opt_options : {};
+    const options = opt_options ? opt_options : {};
 
-  /**
-   * The last position we translated to.
-   * @type {ol.Coordinate}
-   * @private
-   */
-  this.lastCoordinate_ = null;
+    /**
+     * The last position we translated to.
+     * @type {ol.Coordinate}
+     * @private
+     */
+    this.lastCoordinate_ = null;
 
 
-  /**
-   * @type {ol.Collection.<ol.Feature>}
-   * @private
-   */
-  this.features_ = options.features !== undefined ? options.features : null;
+    /**
+     * @type {ol.Collection.<ol.Feature>}
+     * @private
+     */
+    this.features_ = options.features !== undefined ? options.features : null;
 
-  /** @type {function(ol.layer.Layer): boolean} */
-  let layerFilter;
-  if (options.layers) {
-    if (typeof options.layers === 'function') {
-      layerFilter = options.layers;
+    /** @type {function(ol.layer.Layer): boolean} */
+    let layerFilter;
+    if (options.layers) {
+      if (typeof options.layers === 'function') {
+        layerFilter = options.layers;
+      } else {
+        const layers = options.layers;
+        layerFilter = function(layer) {
+          return includes(layers, layer);
+        };
+      }
     } else {
-      const layers = options.layers;
-      layerFilter = function(layer) {
-        return includes(layers, layer);
-      };
+      layerFilter = TRUE;
     }
-  } else {
-    layerFilter = TRUE;
+
+    /**
+     * @private
+     * @type {function(ol.layer.Layer): boolean}
+     */
+    this.layerFilter_ = layerFilter;
+
+    /**
+     * @private
+     * @type {number}
+     */
+    this.hitTolerance_ = options.hitTolerance ? options.hitTolerance : 0;
+
+    /**
+     * @type {ol.Feature}
+     * @private
+     */
+    this.lastFeature_ = null;
+
+    listen(this,
+      BaseObject.getChangeEventType(InteractionProperty.ACTIVE),
+      this.handleActiveChanged_, this);
+
   }
 
   /**
+   * Tests to see if the given coordinates intersects any of our selected
+   * features.
+   * @param {ol.Pixel} pixel Pixel coordinate to test for intersection.
+   * @param {ol.PluggableMap} map Map to test the intersection on.
+   * @return {ol.Feature} Returns the feature found at the specified pixel
+   * coordinates.
    * @private
-   * @type {function(ol.layer.Layer): boolean}
    */
-  this.layerFilter_ = layerFilter;
+  featuresAtPixel_(pixel, map) {
+    return map.forEachFeatureAtPixel(pixel,
+      function(feature) {
+        if (!this.features_ || includes(this.features_.getArray(), feature)) {
+          return feature;
+        }
+      }.bind(this), {
+        layerFilter: this.layerFilter_,
+        hitTolerance: this.hitTolerance_
+      });
+  }
+
+
+  /**
+   * Returns the Hit-detection tolerance.
+   * @returns {number} Hit tolerance in pixels.
+   * @api
+   */
+  getHitTolerance() {
+    return this.hitTolerance_;
+  }
+
+
+  /**
+   * Hit-detection tolerance. Pixels inside the radius around the given position
+   * will be checked for features. This only works for the canvas renderer and
+   * not for WebGL.
+   * @param {number} hitTolerance Hit tolerance in pixels.
+   * @api
+   */
+  setHitTolerance(hitTolerance) {
+    this.hitTolerance_ = hitTolerance;
+  }
+
+
+  /**
+   * @inheritDoc
+   */
+  setMap(map) {
+    const oldMap = this.getMap();
+    PointerInteraction.prototype.setMap.call(this, map);
+    this.updateState_(oldMap);
+  }
+
 
   /**
    * @private
-   * @type {number}
    */
-  this.hitTolerance_ = options.hitTolerance ? options.hitTolerance : 0;
+  handleActiveChanged_() {
+    this.updateState_(null);
+  }
+
 
   /**
-   * @type {ol.Feature}
+   * @param {ol.PluggableMap} oldMap Old map.
    * @private
    */
-  this.lastFeature_ = null;
-
-  listen(this,
-    BaseObject.getChangeEventType(InteractionProperty.ACTIVE),
-    this.handleActiveChanged_, this);
-
-};
-
-inherits(Translate, PointerInteraction);
+  updateState_(oldMap) {
+    let map = this.getMap();
+    const active = this.getActive();
+    if (!map || !active) {
+      map = map || oldMap;
+      if (map) {
+        const elem = map.getViewport();
+        elem.classList.remove('ol-grab', 'ol-grabbing');
+      }
+    }
+  }
+}
 
 
 /**
@@ -176,85 +254,6 @@ function handleMoveEvent(event) {
     elem.classList.remove('ol-grab', 'ol-grabbing');
   }
 }
-
-
-/**
- * Tests to see if the given coordinates intersects any of our selected
- * features.
- * @param {ol.Pixel} pixel Pixel coordinate to test for intersection.
- * @param {ol.PluggableMap} map Map to test the intersection on.
- * @return {ol.Feature} Returns the feature found at the specified pixel
- * coordinates.
- * @private
- */
-Translate.prototype.featuresAtPixel_ = function(pixel, map) {
-  return map.forEachFeatureAtPixel(pixel,
-    function(feature) {
-      if (!this.features_ || includes(this.features_.getArray(), feature)) {
-        return feature;
-      }
-    }.bind(this), {
-      layerFilter: this.layerFilter_,
-      hitTolerance: this.hitTolerance_
-    });
-};
-
-
-/**
- * Returns the Hit-detection tolerance.
- * @returns {number} Hit tolerance in pixels.
- * @api
- */
-Translate.prototype.getHitTolerance = function() {
-  return this.hitTolerance_;
-};
-
-
-/**
- * Hit-detection tolerance. Pixels inside the radius around the given position
- * will be checked for features. This only works for the canvas renderer and
- * not for WebGL.
- * @param {number} hitTolerance Hit tolerance in pixels.
- * @api
- */
-Translate.prototype.setHitTolerance = function(hitTolerance) {
-  this.hitTolerance_ = hitTolerance;
-};
-
-
-/**
- * @inheritDoc
- */
-Translate.prototype.setMap = function(map) {
-  const oldMap = this.getMap();
-  PointerInteraction.prototype.setMap.call(this, map);
-  this.updateState_(oldMap);
-};
-
-
-/**
- * @private
- */
-Translate.prototype.handleActiveChanged_ = function() {
-  this.updateState_(null);
-};
-
-
-/**
- * @param {ol.PluggableMap} oldMap Old map.
- * @private
- */
-Translate.prototype.updateState_ = function(oldMap) {
-  let map = this.getMap();
-  const active = this.getActive();
-  if (!map || !active) {
-    map = map || oldMap;
-    if (map) {
-      const elem = map.getViewport();
-      elem.classList.remove('ol-grab', 'ol-grabbing');
-    }
-  }
-};
 
 
 /**

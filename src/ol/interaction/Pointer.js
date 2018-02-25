@@ -23,63 +23,114 @@ import {getValues} from '../obj.js';
  * @extends {ol.interaction.Interaction}
  * @api
  */
-const PointerInteraction = function(opt_options) {
+class PointerInteraction extends Interaction {
+  constructor(opt_options) {
 
-  const options = opt_options ? opt_options : {};
+    const options = opt_options ? opt_options : {};
 
-  Interaction.call(this, {
-    handleEvent: options.handleEvent || handleEvent
-  });
+    super({
+      handleEvent: options.handleEvent || handleEvent
+    });
 
+    /**
+     * @type {function(ol.MapBrowserPointerEvent):boolean}
+     * @private
+     */
+    this.handleDownEvent_ = options.handleDownEvent ?
+      options.handleDownEvent : PointerInteraction.handleDownEvent;
+
+    /**
+     * @type {function(ol.MapBrowserPointerEvent)}
+     * @private
+     */
+    this.handleDragEvent_ = options.handleDragEvent ?
+      options.handleDragEvent : PointerInteraction.handleDragEvent;
+
+    /**
+     * @type {function(ol.MapBrowserPointerEvent)}
+     * @private
+     */
+    this.handleMoveEvent_ = options.handleMoveEvent ?
+      options.handleMoveEvent : PointerInteraction.handleMoveEvent;
+
+    /**
+     * @type {function(ol.MapBrowserPointerEvent):boolean}
+     * @private
+     */
+    this.handleUpEvent_ = options.handleUpEvent ?
+      options.handleUpEvent : PointerInteraction.handleUpEvent;
+
+    /**
+     * @type {boolean}
+     * @protected
+     */
+    this.handlingDownUpSequence = false;
+
+    /**
+     * @type {Object.<string, ol.pointer.PointerEvent>}
+     * @private
+     */
+    this.trackedPointers_ = {};
+
+    /**
+     * @type {Array.<ol.pointer.PointerEvent>}
+     * @protected
+     */
+    this.targetPointers = [];
+
+  }
   /**
-   * @type {function(ol.MapBrowserPointerEvent):boolean}
+   * @param {ol.MapBrowserPointerEvent} mapBrowserEvent Event.
+   * @return {boolean} Whether the event is a pointerdown, pointerdrag
+   *     or pointerup event.
    * @private
    */
-  this.handleDownEvent_ = options.handleDownEvent ?
-    options.handleDownEvent : PointerInteraction.handleDownEvent;
+  isPointerDraggingEvent_(mapBrowserEvent) {
+    const type = mapBrowserEvent.type;
+    return type === MapBrowserEventType.POINTERDOWN ||
+      type === MapBrowserEventType.POINTERDRAG ||
+      type === MapBrowserEventType.POINTERUP;
+  }
+
 
   /**
-   * @type {function(ol.MapBrowserPointerEvent)}
+   * @param {ol.MapBrowserPointerEvent} mapBrowserEvent Event.
    * @private
    */
-  this.handleDragEvent_ = options.handleDragEvent ?
-    options.handleDragEvent : PointerInteraction.handleDragEvent;
+  updateTrackedPointers_(mapBrowserEvent) {
+    if (this.isPointerDraggingEvent_(mapBrowserEvent)) {
+      const event = mapBrowserEvent.pointerEvent;
 
+      const id = event.pointerId.toString();
+      if (mapBrowserEvent.type == MapBrowserEventType.POINTERUP) {
+        delete this.trackedPointers_[id];
+      } else if (mapBrowserEvent.type ==
+          MapBrowserEventType.POINTERDOWN) {
+        this.trackedPointers_[id] = event;
+      } else if (id in this.trackedPointers_) {
+        // update only when there was a pointerdown event for this pointer
+        this.trackedPointers_[id] = event;
+      }
+      this.targetPointers = getValues(this.trackedPointers_);
+    }
+  }
   /**
-   * @type {function(ol.MapBrowserPointerEvent)}
-   * @private
-   */
-  this.handleMoveEvent_ = options.handleMoveEvent ?
-    options.handleMoveEvent : PointerInteraction.handleMoveEvent;
-
-  /**
-   * @type {function(ol.MapBrowserPointerEvent):boolean}
-   * @private
-   */
-  this.handleUpEvent_ = options.handleUpEvent ?
-    options.handleUpEvent : PointerInteraction.handleUpEvent;
-
-  /**
-   * @type {boolean}
+   * This method is used to determine if "down" events should be propagated to
+   * other interactions or should be stopped.
+   *
+   * The method receives the return code of the "handleDownEvent" function.
+   *
+   * By default this function is the "identity" function. It's overidden in
+   * child classes.
+   *
+   * @param {boolean} handled Was the event handled by the interaction?
+   * @return {boolean} Should the event be stopped?
    * @protected
    */
-  this.handlingDownUpSequence = false;
-
-  /**
-   * @type {Object.<string, ol.pointer.PointerEvent>}
-   * @private
-   */
-  this.trackedPointers_ = {};
-
-  /**
-   * @type {Array.<ol.pointer.PointerEvent>}
-   * @protected
-   */
-  this.targetPointers = [];
-
-};
-
-inherits(PointerInteraction, Interaction);
+  shouldStopEvent(handled) {
+    return handled;
+  }
+}
 
 
 /**
@@ -95,43 +146,6 @@ PointerInteraction.centroid = function(pointerEvents) {
     clientY += pointerEvents[i].clientY;
   }
   return [clientX / length, clientY / length];
-};
-
-
-/**
- * @param {ol.MapBrowserPointerEvent} mapBrowserEvent Event.
- * @return {boolean} Whether the event is a pointerdown, pointerdrag
- *     or pointerup event.
- * @private
- */
-PointerInteraction.prototype.isPointerDraggingEvent_ = function(mapBrowserEvent) {
-  const type = mapBrowserEvent.type;
-  return type === MapBrowserEventType.POINTERDOWN ||
-    type === MapBrowserEventType.POINTERDRAG ||
-    type === MapBrowserEventType.POINTERUP;
-};
-
-
-/**
- * @param {ol.MapBrowserPointerEvent} mapBrowserEvent Event.
- * @private
- */
-PointerInteraction.prototype.updateTrackedPointers_ = function(mapBrowserEvent) {
-  if (this.isPointerDraggingEvent_(mapBrowserEvent)) {
-    const event = mapBrowserEvent.pointerEvent;
-
-    const id = event.pointerId.toString();
-    if (mapBrowserEvent.type == MapBrowserEventType.POINTERUP) {
-      delete this.trackedPointers_[id];
-    } else if (mapBrowserEvent.type ==
-        MapBrowserEventType.POINTERDOWN) {
-      this.trackedPointers_[id] = event;
-    } else if (id in this.trackedPointers_) {
-      // update only when there was a pointerdown event for this pointer
-      this.trackedPointers_[id] = event;
-    }
-    this.targetPointers = getValues(this.trackedPointers_);
-  }
 };
 
 
@@ -200,22 +214,5 @@ export function handleEvent(mapBrowserEvent) {
   return !stopEvent;
 }
 
-
-/**
- * This method is used to determine if "down" events should be propagated to
- * other interactions or should be stopped.
- *
- * The method receives the return code of the "handleDownEvent" function.
- *
- * By default this function is the "identity" function. It's overidden in
- * child classes.
- *
- * @param {boolean} handled Was the event handled by the interaction?
- * @return {boolean} Should the event be stopped?
- * @protected
- */
-PointerInteraction.prototype.shouldStopEvent = function(handled) {
-  return handled;
-};
 
 export default PointerInteraction;

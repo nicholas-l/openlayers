@@ -30,23 +30,23 @@ class Attribution extends Control {
      * @private
      * @type {Element}
      */
-    this.ulElement_ = document.createElement('UL');
+    const ulElement_ = document.createElement('UL');
 
     /**
      * @private
      * @type {boolean}
      */
-    this.collapsed_ = options.collapsed !== undefined ? options.collapsed : true;
+    let collapsed_ = options.collapsed !== undefined ? options.collapsed : true;
 
     /**
      * @private
      * @type {boolean}
      */
-    this.collapsible_ = options.collapsible !== undefined ?
+    const collapsible_ = options.collapsible !== undefined ?
       options.collapsible : true;
 
-    if (!this.collapsible_) {
-      this.collapsed_ = false;
+    if (!collapsible_) {
+      collapsed_ = false;
     }
 
     const className = options.className !== undefined ? options.className : 'ol-attribution';
@@ -54,47 +54,49 @@ class Attribution extends Control {
     const tipLabel = options.tipLabel !== undefined ? options.tipLabel : 'Attributions';
 
     const collapseLabel = options.collapseLabel !== undefined ? options.collapseLabel : '\u00BB';
+    let collapseLabel_;
 
     if (typeof collapseLabel === 'string') {
       /**
        * @private
        * @type {Node}
        */
-      this.collapseLabel_ = document.createElement('span');
-      this.collapseLabel_.textContent = collapseLabel;
+      collapseLabel_ = document.createElement('span');
+      collapseLabel_.textContent = collapseLabel;
     } else {
-      this.collapseLabel_ = collapseLabel;
+      collapseLabel_ = collapseLabel;
     }
 
     const label = options.label !== undefined ? options.label : 'i';
+    let label_;
 
     if (typeof label === 'string') {
       /**
        * @private
        * @type {Node}
        */
-      this.label_ = document.createElement('span');
-      this.label_.textContent = label;
+      label_ = document.createElement('span');
+      label_.textContent = label;
     } else {
-      this.label_ = label;
+      label_ = label;
     }
 
 
-    const activeLabel = (this.collapsible_ && !this.collapsed_) ?
-      this.collapseLabel_ : this.label_;
+    const activeLabel = (collapsible_ && !collapsed_) ?
+      collapseLabel_ : label_;
     const button = document.createElement('button');
     button.setAttribute('type', 'button');
     button.title = tipLabel;
     button.appendChild(activeLabel);
 
-    listen(button, EventType.CLICK, this.handleClick_, this);
+    listen(button, EventType.CLICK, (event) => this.handleClick_(event));
 
     const cssClasses = className + ' ' + CLASS_UNSELECTABLE + ' ' + CLASS_CONTROL +
-        (this.collapsed_ && this.collapsible_ ? ' ' + CLASS_COLLAPSED : '') +
-        (this.collapsible_ ? '' : ' ol-uncollapsible');
+        (collapsed_ && collapsible_ ? ' ' + CLASS_COLLAPSED : '') +
+        (collapsible_ ? '' : ' ol-uncollapsible');
     const element = document.createElement('div');
     element.className = cssClasses;
-    element.appendChild(this.ulElement_);
+    element.appendChild(ulElement_);
     element.appendChild(button);
 
     super({
@@ -102,7 +104,11 @@ class Attribution extends Control {
       render: options.render || render,
       target: options.target
     });
-
+    this.collapsible_ = collapsible_;
+    this.collapsed_ = collapsed_;
+    this.collapseLabel_ = collapseLabel_;
+    this.label_ = label_;
+    this.ulElement_ = this.ulElement_;
     /**
      * A list of currently rendered resolutions.
      * @type {Array.<string>}
