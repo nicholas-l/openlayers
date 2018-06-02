@@ -257,7 +257,7 @@ Geometry.prototype.translate = function(deltaX, deltaY) {};
 Geometry.prototype.transform = function(source, destination) {
   source = getProjection(source);
   const transformFn = source.getUnits() == Units.TILE_PIXELS ?
-    function(inCoordinates, outCoordinates, stride) {
+    (inCoordinates, outCoordinates, stride) => {
       const pixelExtent = source.getExtent();
       const projectedExtent = source.getWorldExtent();
       const scale = getHeight(projectedExtent) / getHeight(pixelExtent);

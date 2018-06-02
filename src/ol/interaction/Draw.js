@@ -276,7 +276,7 @@ const Draw = function(options) {
        * @param {module:ol/geom/SimpleGeometry=} opt_geometry Optional geometry.
        * @return {module:ol/geom/SimpleGeometry} A geometry.
        */
-      geometryFunction = function(coordinates, opt_geometry) {
+      geometryFunction = (coordinates, opt_geometry) => {
         const circle = opt_geometry ? /** @type {module:ol/geom/Circle} */ (opt_geometry) :
           new Circle([NaN, NaN]);
         const squaredLength = squaredCoordinateDistance(
@@ -300,7 +300,7 @@ const Draw = function(options) {
        * @param {module:ol/geom/SimpleGeometry=} opt_geometry Optional geometry.
        * @return {module:ol/geom/SimpleGeometry} A geometry.
        */
-      geometryFunction = function(coordinates, opt_geometry) {
+      geometryFunction = (coordinates, opt_geometry) => {
         let geometry = opt_geometry;
         if (geometry) {
           if (mode === Mode.POLYGON) {
@@ -962,7 +962,7 @@ Draw.prototype.updateState_ = function() {
  * @api
  */
 export function createRegularPolygon(opt_sides, opt_angle) {
-  return function(coordinates, opt_geometry) {
+  return (coordinates, opt_geometry) => {
     const center = coordinates[0];
     const end = coordinates[1];
     const radius = Math.sqrt(
@@ -986,7 +986,7 @@ export function createRegularPolygon(opt_sides, opt_angle) {
  */
 export function createBox() {
   return (
-    function(coordinates, opt_geometry) {
+    (coordinates, opt_geometry) => {
       const extent = boundingExtent(coordinates);
       const geometry = opt_geometry || new Polygon(null);
       geometry.setCoordinates([[

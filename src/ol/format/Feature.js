@@ -247,7 +247,7 @@ export function transformWithOptions(geometry, write, opt_options) {
      * @param {Array.<number>} coordinates Coordinates.
      * @return {Array.<number>} Transformed coordinates.
      */
-    const transform = function(coordinates) {
+    const transform = (coordinates) => {
       for (let i = 0, ii = coordinates.length; i < ii; ++i) {
         coordinates[i] = Math.round(coordinates[i] * power) / power;
       }

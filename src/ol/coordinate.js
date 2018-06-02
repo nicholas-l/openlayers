@@ -149,7 +149,7 @@ export function createStringXY(opt_fractionDigits) {
      * @param {module:ol/coordinate~Coordinate} coordinate Coordinate.
      * @return {string} String XY.
      */
-    function(coordinate) {
+    (coordinate) => {
       return toStringXY(coordinate, opt_fractionDigits);
     }
   );

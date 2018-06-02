@@ -55,7 +55,7 @@ export function loadFeaturesXhr(url, format, success, failure) {
      * @param {module:ol/proj/Projection} projection Projection.
      * @this {module:ol/source/Vector|module:ol/VectorTile}
      */
-    function(extent, resolution, projection) {
+    (extent, resolution, projection) => {
       const xhr = new XMLHttpRequest();
       xhr.open('GET',
         typeof url === 'function' ? url(extent, resolution, projection) : url,
@@ -67,7 +67,7 @@ export function loadFeaturesXhr(url, format, success, failure) {
        * @param {Event} event Event.
        * @private
        */
-      xhr.onload = function(event) {
+      xhr.onload = (event) => {
         // status will be 0 for file:// urls
         if (!xhr.status || xhr.status >= 200 && xhr.status < 300) {
           const type = format.getType();
@@ -93,13 +93,13 @@ export function loadFeaturesXhr(url, format, success, failure) {
         } else {
           failure.call(this);
         }
-      }.bind(this);
+      };
       /**
        * @private
        */
-      xhr.onerror = function() {
+      xhr.onerror = () => {
         failure.call(this);
-      }.bind(this);
+      };
       xhr.send();
     }
   );
@@ -123,7 +123,7 @@ export function xhr(url, format) {
      * projection.
      * @this {module:ol/source/Vector}
      */
-    function(features, dataProjection) {
+    (features, dataProjection) => {
       this.addFeatures(features);
     }, /* FIXME handle error */ UNDEFINED);
 }

@@ -151,9 +151,9 @@ const OverviewMap = function(opt_options) {
       /**
        * @param {module:ol/layer/Layer} layer Layer.
        */
-      (function(layer) {
+      ((layer) => {
         ovmap.addLayer(layer);
-      }).bind(this));
+      }));
   }
 
   const box = document.createElement('DIV');
@@ -194,20 +194,18 @@ const OverviewMap = function(opt_options) {
 
   /* Functions definition */
 
-  const computeDesiredMousePosition = function(mousePosition) {
-    return {
-      clientX: mousePosition.clientX - (overlayBox.offsetWidth / 2),
-      clientY: mousePosition.clientY + (overlayBox.offsetHeight / 2)
-    };
-  };
+  const computeDesiredMousePosition = (mousePosition) => ({
+    clientX: mousePosition.clientX - (overlayBox.offsetWidth / 2),
+    clientY: mousePosition.clientY + (overlayBox.offsetHeight / 2)
+  });
 
-  const move = function(event) {
+  const move = (event) => {
     const coordinates = ovmap.getEventCoordinate(computeDesiredMousePosition(event));
 
     overlay.setPosition(coordinates);
   };
 
-  const endMoving = function(event) {
+  const endMoving = (event) => {
     const coordinates = ovmap.getEventCoordinate(event);
 
     scope.getMap().getView().setCenter(coordinates);
@@ -218,7 +216,7 @@ const OverviewMap = function(opt_options) {
 
   /* Binding */
 
-  overlayBox.addEventListener('mousedown', function() {
+  overlayBox.addEventListener('mousedown', () => {
     window.addEventListener('mousemove', move);
     window.addEventListener('mouseup', endMoving);
   });
@@ -526,10 +524,9 @@ OverviewMap.prototype.handleToggle_ = function() {
     ovmap.updateSize();
     this.resetExtent_();
     listenOnce(ovmap, MapEventType.POSTRENDER,
-      function(event) {
+      (event) => {
         this.updateBox_();
-      },
-      this);
+      });
   }
 };
 

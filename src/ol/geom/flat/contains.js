@@ -18,9 +18,7 @@ export function linearRingContainsExtent(flatCoordinates, offset, end, stride, e
      * @param {module:ol/coordinate~Coordinate} coordinate Coordinate.
      * @return {boolean} Contains (x, y).
      */
-    function(coordinate) {
-      return !linearRingContainsXY(flatCoordinates, offset, end, stride, coordinate[0], coordinate[1]);
-    });
+    (coordinate) => !linearRingContainsXY(flatCoordinates, offset, end, stride, coordinate[0], coordinate[1]));
   return !outside;
 }
 

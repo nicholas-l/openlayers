@@ -71,7 +71,7 @@ function fromNamed(color) {
  * @return {module:ol/color~Color} Color.
  */
 export const fromString = (
-  function() {
+  () => {
 
     // We maintain a small cache of parsed strings.  To provide cheap LRU-like
     // semantics, whenever the cache grows too large we simply delete an
@@ -98,7 +98,7 @@ export const fromString = (
        * @param {string} s String.
        * @return {module:ol/color~Color} Color.
        */
-      function(s) {
+      (s) => {
         let color;
         if (cache.hasOwnProperty(s)) {
           color = cache[s];

@@ -19,7 +19,7 @@ export function createExtent(extent) {
      * @param {module:ol/coordinate~Coordinate=} center Center.
      * @return {module:ol/coordinate~Coordinate|undefined} Center.
      */
-    function(center) {
+    (center) => {
       if (center) {
         return [
           clamp(center[0], extent[0], extent[2]),

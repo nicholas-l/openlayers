@@ -32,7 +32,7 @@ import {clear} from './obj.js';
  * @return {module:ol/events~ListenerFunction} Bound listener.
  */
 export function bindListener(listenerObj) {
-  const boundListener = function(evt) {
+  const boundListener = (evt) => {
     const listener = listenerObj.listener;
     const bindTo = listenerObj.bindTo || listenerObj.target;
     if (listenerObj.callOnce) {

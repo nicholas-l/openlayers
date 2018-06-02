@@ -416,7 +416,7 @@ function createFeatureStyleFunction(style, styleUrl, defaultStyle, sharedStyles,
      * @param {number} resolution Resolution.
      * @return {Array.<module:ol/style/Style>} Style.
      */
-    function(feature, resolution) {
+    (feature, resolution) => {
       let drawName = showPointNames;
       /** @type {module:ol/style/Style|undefined} */
       let nameStyle;
@@ -2684,9 +2684,7 @@ function writePlacemark(node, feature, objectStack) {
   const filter = {'address': 1, 'description': 1, 'name': 1, 'open': 1,
     'phoneNumber': 1, 'styleUrl': 1, 'visibility': 1};
   filter[feature.getGeometryName()] = 1;
-  const keys = Object.keys(properties || {}).sort().filter(function(v) {
-    return !filter[v];
-  });
+  const keys = Object.keys(properties || {}).sort().filter((v) => !filter[v]);
 
   if (keys.length > 0) {
     const sequence = makeSequence(properties, keys);

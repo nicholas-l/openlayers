@@ -38,9 +38,8 @@ export function intersectsLineString(flatCoordinates, offset, end, stride, exten
      * @return {boolean} `true` if the segment and the extent intersect,
      *     `false` otherwise.
      */
-    function(point1, point2) {
-      return intersectsSegment(extent, point1, point2);
-    });
+    (point1, point2) => intersectsSegment(extent, point1, point2)
+  );
 }
 
 

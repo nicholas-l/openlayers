@@ -104,7 +104,7 @@ export function greatCircleArc(lon1, lat1, lon2, lat2, projection, squaredTolera
      * @param {number} frac Fraction.
      * @return {module:ol/coordinate~Coordinate} Coordinate.
      */
-    function(frac) {
+    (frac) => {
       if (1 <= d) {
         return [lon2, lat2];
       }
@@ -139,9 +139,7 @@ export function meridian(lon, lat1, lat2, projection, squaredTolerance) {
      * @param {number} frac Fraction.
      * @return {module:ol/coordinate~Coordinate} Coordinate.
      */
-    function(frac) {
-      return [lon, lat1 + ((lat2 - lat1) * frac)];
-    },
+    (frac) => [lon, lat1 + ((lat2 - lat1) * frac)],
     getTransform(epsg4326Projection, projection), squaredTolerance);
 }
 
@@ -162,8 +160,6 @@ export function parallel(lat, lon1, lon2, projection, squaredTolerance) {
      * @param {number} frac Fraction.
      * @return {module:ol/coordinate~Coordinate} Coordinate.
      */
-    function(frac) {
-      return [lon1 + ((lon2 - lon1) * frac), lat];
-    },
+    (frac) => [lon1 + ((lon2 - lon1) * frac), lat],
     getTransform(epsg4326Projection, projection), squaredTolerance);
 }

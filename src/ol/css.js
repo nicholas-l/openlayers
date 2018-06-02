@@ -64,10 +64,10 @@ export const CLASS_COLLAPSED = 'ol-collapsed';
  * @param {string} The CSS font property.
  * @return {Object.<string>} The font families (or null if the input spec is invalid).
  */
-export const getFontFamilies = (function() {
+export const getFontFamilies = (() => {
   let style;
   const cache = {};
-  return function(font) {
+  return (font) => {
     if (!style) {
       style = document.createElement('div').style;
     }

@@ -137,7 +137,7 @@ function readGeometryCollectionGeometry(object, opt_options) {
      * @param {GeoJSONGeometry} geometry Geometry.
      * @return {module:ol/geom/Geometry} geometry Geometry.
      */
-    function(geometry) {
+    (geometry) => {
       return readGeometry(geometry, opt_options);
     });
   return new GeometryCollection(geometries);
@@ -228,7 +228,7 @@ function writeEmptyGeometryCollectionGeometry(geometry) {
  * @return {GeoJSONGeometryCollection} GeoJSON geometry collection.
  */
 function writeGeometryCollectionGeometry(geometry, opt_options) {
-  const geometries = geometry.getGeometriesArray().map(function(geometry) {
+  const geometries = geometry.getGeometriesArray().map((geometry) => {
     const options = assign({}, opt_options);
     delete options.featureProjection;
     return writeGeometry(geometry, options);

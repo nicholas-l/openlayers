@@ -305,7 +305,7 @@ export function createStyleFunction(obj) {
         41); // Expected an `module:ol/style/Style~Style` or an array of `module:ol/style/Style~Style`
       styles = [obj];
     }
-    return function() {
+    return () => {
       return styles;
     };
   }

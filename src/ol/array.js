@@ -204,7 +204,7 @@ export function stableSort(arr, compareFnc) {
   for (i = 0; i < length; i++) {
     tmp[i] = {index: i, value: arr[i]};
   }
-  tmp.sort(function(a, b) {
+  tmp.sort((a, b) => {
     return compareFnc(a.value, b.value) || a.index - b.index;
   });
   for (i = 0; i < arr.length; i++) {
@@ -220,7 +220,7 @@ export function stableSort(arr, compareFnc) {
  */
 export function findIndex(arr, func) {
   let index;
-  const found = !arr.every(function(el, idx) {
+  const found = !arr.every((el, idx) => {
     index = idx;
     return !func(el, idx, arr);
   });
@@ -236,7 +236,7 @@ export function findIndex(arr, func) {
  */
 export function isSorted(arr, opt_func, opt_strict) {
   const compare = opt_func || numberSafeCompareFunction;
-  return arr.every(function(currentVal, index) {
+  return arr.every((currentVal, index) => {
     if (index === 0) {
       return true;
     }

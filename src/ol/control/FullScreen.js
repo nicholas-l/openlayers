@@ -12,9 +12,9 @@ import EventType from '../events/EventType.js';
 /**
  * @return {string} Change type.
  */
-const getChangeType = (function() {
+const getChangeType = (() => {
   let changeType;
-  return function() {
+  return () => {
     if (!changeType) {
       const body = document.body;
       if (body.webkitRequestFullscreen) {

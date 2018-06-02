@@ -492,7 +492,7 @@ function readLayer(node, objectStack) {
 
   // See 7.2.4.8
   const addKeys = ['Style', 'CRS', 'AuthorityURL'];
-  addKeys.forEach(function(key) {
+  addKeys.forEach((key) => {
     if (key in parentLayerObject) {
       const childValue = layerObject[key] || [];
       layerObject[key] = childValue.concat(parentLayerObject[key]);
@@ -501,7 +501,7 @@ function readLayer(node, objectStack) {
 
   const replaceKeys = ['EX_GeographicBoundingBox', 'BoundingBox', 'Dimension',
     'Attribution', 'MinScaleDenominator', 'MaxScaleDenominator'];
-  replaceKeys.forEach(function(key) {
+  replaceKeys.forEach((key) => {
     if (!(key in layerObject)) {
       const parentValue = parentLayerObject[key];
       layerObject[key] = parentValue;
